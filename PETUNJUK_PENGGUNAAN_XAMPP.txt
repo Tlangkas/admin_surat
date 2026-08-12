@@ -15,18 +15,19 @@ DAFTAR ISI
   1. Ringkasan & Persyaratan Sistem
   2. Instalasi Pertama Kali (One-Time Setup)
   3. Konfigurasi Domain VirtualHost (e-surat.local)
-  4. Cara Menjalankan Aplikasi Setiap Hari (Quick Start)
-  5. Konfigurasi & Penggunaan Laravel Reverb (Real-Time WebSocket)
-  6. Matriks Akun Login Default & Hak Akses
-  7. Panduan Penggunaan Lengkap per Peran (Role)
-     - 7.1 Guru & Karyawan (Gukar)
-     - 7.2 Administrator (Admin)
-     - 7.3 Kepala Sekolah (Kepsek)
-  8. Alur Status Surat & Audit Trail Log
-  9. Keamanan & Verifikasi Keaslian Surat via QR Code
- 10. Troubleshooting & FAQ (Pemecahan Masalah)
- 11. Pemeliharaan, Backup Database & Log
- 12. Pengujian Otomatis (Automated Testing)
+  4. Akses Aplikasi dari Jaringan Lokal (LAN) via Alamat IP
+  5. Cara Menjalankan Aplikasi Setiap Hari (Quick Start)
+  6. Konfigurasi & Penggunaan Laravel Reverb (Real-Time WebSocket)
+  7. Matriks Akun Login Default & Hak Akses
+  8. Panduan Penggunaan Lengkap per Peran (Role)
+     - 8.1 Guru & Karyawan (Gukar)
+     - 8.2 Administrator (Admin)
+     - 8.3 Kepala Sekolah (Kepsek)
+  9. Alur Status Surat & Audit Trail Log
+ 10. Keamanan & Verifikasi Keaslian Surat via QR Code
+ 11. Troubleshooting & FAQ (Pemecahan Masalah)
+ 12. Pemeliharaan, Backup Database & Log
+ 13. Pengujian Otomatis (Automated Testing)
 
 
 ================================================================================
@@ -117,13 +118,17 @@ Agar aplikasi dapat diakses melalui URL rapi http://e-surat.local/admin:
 
 --- 3.1 Konfigurasi VirtualHost Apache --------------------------------------
   Buka file: C:\xampp\apache\conf\extra\httpd-vhosts.conf
-  Tambahkan blok konfigurasi berikut di baris paling bawah:
+  ISI LENGKAP file tersebut harus seperti berikut:
+
+    # Virtual Hosts
+    # Required modules: mod_log_config
 
     <VirtualHost *:80>
-        DocumentRoot "C:/xampp/htdocs"
+        DocumentRoot "C:/xampp/htdocs/admin_surat-main/public"
         ServerName localhost
-        <Directory "C:/xampp/htdocs">
-            Options Indexes FollowSymLinks Includes ExecCGI
+        ServerAlias *
+        <Directory "C:/xampp/htdocs/admin_surat-main/public">
+            Options FollowSymLinks Includes ExecCGI
             AllowOverride All
             Require all granted
         </Directory>
@@ -133,11 +138,17 @@ Agar aplikasi dapat diakses melalui URL rapi http://e-surat.local/admin:
         DocumentRoot "C:/xampp/htdocs/admin_surat-main/public"
         ServerName e-surat.local
         <Directory "C:/xampp/htdocs/admin_surat-main/public">
-            Options Indexes FollowSymLinks Includes ExecCGI
+            Options FollowSymLinks Includes ExecCGI
             AllowOverride All
             Require all granted
         </Directory>
     </VirtualHost>
+
+  PENTING:
+  - VirtualHost pertama memiliki "ServerAlias *" agar menangkap SEMUA request
+    termasuk akses via alamat IP dari jaringan lokal.
+  - JANGAN gunakan "Options Indexes" karena akan menampilkan daftar isi folder
+    (directory listing) alih-alih halaman aplikasi.
 
 --- 3.2 Daftarkan Domain di Windows Hosts File ------------------------------
   Buka File Explorer ke: C:\xampp\htdocs\admin_surat-main
@@ -149,12 +160,97 @@ Agar aplikasi dapat diakses melalui URL rapi http://e-surat.local/admin:
 
 
 ================================================================================
-4. CARA MENJALANKAN APLIKASI SETIAP HARI (QUICK START)
+4. AKSES APLIKASI DARI JARINGAN LOKAL (LAN) VIA ALAMAT IP
+================================================================================
+
+Agar aplikasi E-Surat dapat diakses dari komputer/HP lain di jaringan yang sama
+(misalnya sesama WiFi kantor), ikuti langkah-langkah berikut:
+
+--- 4.1 Cari Alamat IP Laptop Server ----------------------------------------
+  1. Buka Command Prompt atau PowerShell di laptop yang menjalankan XAMPP.
+  2. Ketik perintah:
+       ipconfig
+  3. Cari baris "IPv4 Address" pada adapter jaringan yang aktif.
+     Contoh: 10.10.10.72 atau 192.168.1.100
+
+--- 4.2 Konfigurasi Apache (httpd.conf) -------------------------------------
+  Buka file: C:\xampp\apache\conf\httpd.conf
+  Cari baris DocumentRoot dan Directory (sekitar baris 252), ubah menjadi:
+
+    DocumentRoot "C:/xampp/htdocs/admin_surat-main/public"
+    <Directory "C:/xampp/htdocs/admin_surat-main/public">
+        Options FollowSymLinks Includes ExecCGI
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+  PENTING: Pastikan TIDAK ada kata "Indexes" pada baris Options.
+
+--- 4.3 Konfigurasi Apache SSL (httpd-ssl.conf) -----------------------------
+  Buka file: C:\xampp\apache\conf\extra\httpd-ssl.conf
+  Cari bagian <VirtualHost _default_:443> (sekitar baris 121), ubah:
+
+    DocumentRoot "C:/xampp/htdocs/admin_surat-main/public"
+
+  Dan tambahkan blok Directory di bawahnya (sebelum baris SSLEngine on):
+
+    <Directory "C:/xampp/htdocs/admin_surat-main/public">
+        Options FollowSymLinks Includes ExecCGI
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+--- 4.4 Buka Windows Firewall untuk Apache ----------------------------------
+  Secara default, Windows Firewall MEMBLOKIR koneksi masuk dari jaringan
+  Private. Ini harus diubah agar perangkat lain bisa mengakses.
+
+  Cara Otomatis (via PowerShell Administrator):
+    1. Klik kanan Start Menu ➔ pilih "Windows PowerShell (Admin)".
+    2. Jalankan perintah berikut:
+
+       netsh advfirewall firewall set rule name="Apache HTTP Server" dir=in profile=private protocol=tcp new action=allow
+       netsh advfirewall firewall set rule name="Apache HTTP Server" dir=in profile=private protocol=udp new action=allow
+
+  Cara Manual (via Control Panel):
+    1. Buka Control Panel ➔ System and Security ➔ Windows Defender Firewall.
+    2. Klik "Allow an app through firewall".
+    3. Cari "Apache HTTP Server", centang kolom "Private" dan "Public".
+    4. Klik OK.
+
+--- 4.5 Restart Apache & Akses ----------------------------------------------
+  1. Buka XAMPP Control Panel, klik STOP lalu START kembali pada Apache.
+  2. Dari perangkat lain (HP/laptop) yang terhubung jaringan yang sama,
+     buka browser dan ketik:
+       http://[IP_LAPTOP_SERVER]/admin
+     Contoh: http://10.10.10.72/admin
+
+--- 4.6 Update APP_URL di .env (Opsional tapi Disarankan) -------------------
+  Agar link dan asset (CSS/JS) tampil benar saat diakses via IP, buka
+  file .env dan ubah APP_URL:
+
+    APP_URL=http://10.10.10.72
+
+  Lalu bersihkan cache:
+    php artisan config:clear
+    php artisan cache:clear
+
+  CATATAN: Jika Anda tetap ingin menggunakan e-surat.local di laptop server,
+  biarkan APP_URL=http://e-surat.local dan perangkat lain tetap bisa
+  mengakses via IP (halaman akan tetap muncul, hanya link asset mungkin
+  mengarah ke e-surat.local).
+
+
+================================================================================
+5. CARA MENJALANKAN APLIKASI SETIAP HARI (QUICK START)
 ================================================================================
 
   1. Buka XAMPP Control Panel ➔ Klik Start pada Apache dan MySQL.
   2. Buka browser (Chrome/Edge/Firefox), ketik alamat:
        http://e-surat.local/admin
+
+  Akses dari Jaringan Lokal (HP/Laptop Lain):
+       http://[IP_LAPTOP_SERVER]/admin
+       Contoh: http://10.10.10.72/admin
 
   Alternatif (Tanpa Apache VirtualHost):
   Jalankan server internal PHP dari terminal folder proyek:
@@ -163,7 +259,7 @@ Agar aplikasi dapat diakses melalui URL rapi http://e-surat.local/admin:
 
 
 ================================================================================
-5. KONFIGURASI & PENGGUNAAN LARAVEL REVERB (REAL-TIME WEBSOCKET)
+6. KONFIGURASI & PENGGUNAAN LARAVEL REVERB (REAL-TIME WEBSOCKET)
 ================================================================================
 
 E-Surat Sekolah mendukung notifikasi langsung tanpa reload (Real-Time Broadcast)
@@ -199,7 +295,7 @@ CATATAN PENTING:
 
 
 ================================================================================
-6. MATRIKS AKUN LOGIN DEFAULT & HAK AKSES
+7. MATRIKS AKUN LOGIN DEFAULT & HAK AKSES
 ================================================================================
 
 Semua akun default dibuat otomatis oleh seeder (php artisan db:seed).
@@ -230,10 +326,10 @@ Matriks Hak Akses:
 
 
 ================================================================================
-7. PANDUAN PENGGUNAAN LENGKAP PER PERAN (ROLE)
+8. PANDUAN PENGGUNAAN LENGKAP PER PERAN (ROLE)
 ================================================================================
 
---- 7.1 GURU & KARYAWAN (Gukar) ---------------------------------------------
+--- 8.1 GURU & KARYAWAN (Gukar) ---------------------------------------------
   A. Registrasi Mandiri (Bagi Pegawai Baru):
      1. Buka URL: http://e-surat.local/admin/register
      2. Tahap 1: Masukkan NIP Anda yang sudah ada di Master Karyawan.
@@ -251,7 +347,7 @@ Matriks Hak Akses:
      - Pantau status pada tabel atau lonceng notifikasi.
      - Setelah status berubah menjadi "Ditandatangani", klik tombol "Download PDF".
 
---- 7.2 ADMINISTRATOR (Admin) -----------------------------------------------
+--- 8.2 ADMINISTRATOR (Admin) -----------------------------------------------
   A. Memproses Pengajuan Surat (Tahap 1):
      - Buka menu "Pengajuan Surat".
      - Klik "Setujui" ➔ Nomor surat terbuat otomatis, status menjadi "approved_admin".
@@ -271,7 +367,7 @@ Matriks Hak Akses:
      - Buka menu "Pengaturan Sekolah".
      - Isi Identitas Sekolah, Nama Kepsek, NIP, serta unggah Logo & Stempel.
 
---- 7.3 KEPALA SEKOLAH (Kepsek) ---------------------------------------------
+--- 8.3 KEPALA SEKOLAH (Kepsek) ---------------------------------------------
   A. Penandatanganan Digital (Tahap Akhir):
      - Buka menu "Pengajuan Surat" ➔ Cari surat berstatus "Disetujui Admin".
      - Klik tombol "Tandatangani Surat".
@@ -283,7 +379,7 @@ Matriks Hak Akses:
 
 
 ================================================================================
-8. ALUR STATUS SURAT & AUDIT TRAIL LOG
+9. ALUR STATUS SURAT & AUDIT TRAIL LOG
 ================================================================================
 
   [pending]          -> [approved_admin]   -> [signed]
@@ -298,7 +394,7 @@ Pengubah, Status Asal ➔ Status Baru, Waktu, Alasan/Catatan, IP, & Browser.
 
 
 ================================================================================
-9. KEAMANAN & VERIFIKASI KEASLIAN SURAT VIA QR CODE
+10. KEAMANAN & VERIFIKASI KEASLIAN SURAT VIA QR CODE
 ================================================================================
 
 1. QR Code pada PDF surat berisi URL verifikasi terenkripsi (Signed URL HMAC SHA256).
@@ -311,7 +407,7 @@ Pengubah, Status Asal ➔ Status Baru, Waktu, Alasan/Catatan, IP, & Browser.
 
 
 ================================================================================
-10. TROUBLESHOOTING & FAQ (PEMECAHAN MASALAH)
+11. TROUBLESHOOTING & FAQ (PEMECAHAN MASALAH)
 ================================================================================
 
   1) Error "DNS_PROBE_FINISHED_NXDOMAIN" saat buka http://e-surat.local
@@ -338,7 +434,24 @@ Pengubah, Status Asal ➔ Status Baru, Waktu, Alasan/Catatan, IP, & Browser.
   7) PDF tidak bisa diunduh / Storage Error 404
      Solusi: Jalankan `php artisan storage:link`.
 
-  8) Perubahan .env atau tampilan tidak berefek
+  8) Akses via IP dari perangkat lain menampilkan DIRECTORY LISTING
+     Penyebab: DocumentRoot masih mengarah ke C:/xampp/htdocs.
+     Solusi: Ikuti panduan Bagian 4 untuk mengubah DocumentRoot di:
+       - httpd-vhosts.conf (VirtualHost port 80)
+       - httpd.conf (DocumentRoot utama)
+       - httpd-ssl.conf (VirtualHost HTTPS port 443)
+     Pastikan TIDAK ada "Options Indexes" di konfigurasi.
+     Lalu restart Apache dari XAMPP Control Panel.
+
+  9) Akses via IP dari perangkat lain menampilkan FORBIDDEN (403)
+     Penyebab: Windows Firewall memblokir koneksi masuk Apache di
+     jaringan Private, ATAU konfigurasi SSL belum diubah.
+     Solusi:
+       a. Buka firewall untuk Apache (lihat Bagian 4.4).
+       b. Pastikan httpd-ssl.conf sudah diubah (lihat Bagian 4.3).
+       c. Restart Apache dari XAMPP Control Panel.
+
+ 10) Perubahan .env atau tampilan tidak berefek
      Solusi: Bersihkan cache dengan perintah:
        php artisan config:clear
        php artisan cache:clear
@@ -346,7 +459,7 @@ Pengubah, Status Asal ➔ Status Baru, Waktu, Alasan/Catatan, IP, & Browser.
 
 
 ================================================================================
-11. PEMELIHARAAN, BACKUP DATABASE & LOG
+12. PEMELIHARAAN, BACKUP DATABASE & LOG
 ================================================================================
 
   - Lokasi File PDF Resmi : storage/app/public/pdfs/
@@ -361,7 +474,7 @@ Pengubah, Status Asal ➔ Status Baru, Waktu, Alasan/Catatan, IP, & Browser.
 
 
 ================================================================================
-12. PENGUJIAN OTOMATIS (AUTOMATED TESTING)
+13. PENGUJIAN OTOMATIS (AUTOMATED TESTING)
 ================================================================================
 
   Jalankan seluruh test:
