@@ -1,0 +1,27 @@
+/.phpunit.cache
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/vendor
+.env
+.env.backup
+.env.production
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+auth.json
+npm-debug.log
+yarn-error.log
+/.fleet
+/.idea
+/.vscode
+
+# AI working artifacts
+/.agents
+/clean_template.php
+/run-migrations.php
+/test_m1_challenger.php
+/test_m1_challenger2.php
+/test_m1_verification.php

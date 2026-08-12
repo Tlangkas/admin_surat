@@ -1,0 +1,374 @@
+================================================================================
+  E-SURAT SEKOLAH — DIGITAL LETTER MANAGEMENT SYSTEM
+  PETUNJUK PENGGUNAAN LENGKAP PADA LINGKUNGAN LOCAL XAMPP
+================================================================================
+
+Aplikasi:  E-Surat Sekolah (Digital Letter Management System)
+Stack:     Laravel 11 + Filament v3 + DomPDF + QR Code + Laravel Reverb
+Local:     XAMPP (Apache + MariaDB) + PHP 8.2.12 + Composer
+Path:      C:\xampp\htdocs\admin_surat-main
+Domain:    http://e-surat.local/admin
+
+================================================================================
+DAFTAR ISI
+================================================================================
+  1. Ringkasan & Persyaratan Sistem
+  2. Instalasi Pertama Kali (One-Time Setup)
+  3. Konfigurasi Domain VirtualHost (e-surat.local)
+  4. Cara Menjalankan Aplikasi Setiap Hari (Quick Start)
+  5. Konfigurasi & Penggunaan Laravel Reverb (Real-Time WebSocket)
+  6. Matriks Akun Login Default & Hak Akses
+  7. Panduan Penggunaan Lengkap per Peran (Role)
+     - 7.1 Guru & Karyawan (Gukar)
+     - 7.2 Administrator (Admin)
+     - 7.3 Kepala Sekolah (Kepsek)
+  8. Alur Status Surat & Audit Trail Log
+  9. Keamanan & Verifikasi Keaslian Surat via QR Code
+ 10. Troubleshooting & FAQ (Pemecahan Masalah)
+ 11. Pemeliharaan, Backup Database & Log
+ 12. Pengujian Otomatis (Automated Testing)
+
+
+================================================================================
+1. RINGKASAN & PERSYARATAN SISTEM
+================================================================================
+
+E-Surat Sekolah adalah sistem berbasis web untuk digitasi pengajuan,
+penyetujuan, penandatanganan digital, dan verifikasi surat resmi sekolah.
+
+Persyaratan Minimal:
+  - Windows 10/11 dengan XAMPP terinstal (Apache + MySQL/MariaDB aktif).
+  - PHP >= 8.2 (Versi teruji: PHP 8.2.12 bawaan XAMPP).
+  - Composer (Dependency manager untuk Laravel).
+  - Peramban web (Google Chrome, Microsoft Edge, Mozilla Firefox).
+
+Ekstensi PHP Wajib Aktif (di file C:\xampp\php\php.ini):
+  - extension=gd        (Wajib: Pemrosesan gambar QR Code & stempel)
+  - extension=intl      (Wajib: Format penanggalan & karakter lokal)
+  - extension=zip       (Wajib: Ekspor & impor berkas Excel)
+  - extension=pdo_mysql (Wajib: Koneksi database MySQL/MariaDB)
+  - extension=mbstring  (Wajib: Pemrosesan teks multibyte)
+  - extension=fileinfo  (Wajib: Pengenalan jenis berkas unggahan)
+  - extension=dom       (Wajib: Penanganan struktur HTML/PDF)
+  - extension=openssl   (Wajib: Keamanan enkripsi)
+
+
+================================================================================
+2. INSTALASI PERTAMA KALI (ONE-TIME SETUP)
+================================================================================
+
+Lakukan langkah ini HANYA saat memasang aplikasi di komputer/server baru.
+Jalankan semua perintah dari folder proyek: C:\xampp\htdocs\admin_surat-main
+
+--- 2.1 Aktifkan Ekstensi PHP -----------------------------------------------
+  1. Buka C:\xampp\php\php.ini menggunakan Notepad.
+  2. Hapus tanda titik koma (;) pada baris ekstensi berikut:
+       extension=gd
+       extension=intl
+       extension=zip
+       extension=pdo_mysql
+       extension=mbstring
+       extension=fileinfo
+       extension=dom
+       extension=openssl
+  3. Simpan file `php.ini`.
+
+--- 2.2 Jalankan XAMPP ------------------------------------------------------
+  1. Buka XAMPP Control Panel (C:\xampp\xampp-control.exe).
+  2. Klik tombol "Start" pada modul Apache dan MySQL (pastikan indikator hijau).
+
+--- 2.3 Install Dependency Laravel (Composer) ------------------------------
+  Buka Command Prompt/PowerShell di folder proyek, jalankan:
+    composer install
+
+--- 2.4 Konfigurasi File Environment (.env) --------------------------------
+  Jika file .env belum ada, salin dari .env.example:
+    copy .env.example .env
+
+  Buka file .env dan pastikan pengaturan database sebagai berikut:
+      APP_NAME="E-Surat Sekolah"
+      APP_ENV=local
+      APP_URL=http://e-surat.local
+
+      DB_CONNECTION=mysql
+      DB_HOST=127.0.0.1
+      DB_PORT=3306
+      DB_DATABASE=e_surat
+      DB_USERNAME=root
+      DB_PASSWORD=
+      DB_COLLATION=utf8mb4_general_ci
+
+--- 2.5 Generate Application Key & Storage Link ---------------------------
+    php artisan key:generate
+    php artisan storage:link
+
+--- 2.6 Buat Database & Migrasi + Seeder -----------------------------------
+  1. Buka http://localhost/phpmyadmin di browser.
+  2. Buat database baru bernama: e_surat (collation: utf8mb4_general_ci).
+  3. Jalankan perintah migrasi dan seeder di terminal:
+       php artisan migrate --seed
+
+
+================================================================================
+3. KONFIGURASI DOMAIN VIRTUALHOST (e-surat.local)
+================================================================================
+
+Agar aplikasi dapat diakses melalui URL rapi http://e-surat.local/admin:
+
+--- 3.1 Konfigurasi VirtualHost Apache --------------------------------------
+  Buka file: C:\xampp\apache\conf\extra\httpd-vhosts.conf
+  Tambahkan blok konfigurasi berikut di baris paling bawah:
+
+    <VirtualHost *:80>
+        DocumentRoot "C:/xampp/htdocs"
+        ServerName localhost
+        <Directory "C:/xampp/htdocs">
+            Options Indexes FollowSymLinks Includes ExecCGI
+            AllowOverride All
+            Require all granted
+        </Directory>
+    </VirtualHost>
+
+    <VirtualHost *:80>
+        DocumentRoot "C:/xampp/htdocs/admin_surat-main/public"
+        ServerName e-surat.local
+        <Directory "C:/xampp/htdocs/admin_surat-main/public">
+            Options Indexes FollowSymLinks Includes ExecCGI
+            AllowOverride All
+            Require all granted
+        </Directory>
+    </VirtualHost>
+
+--- 3.2 Daftarkan Domain di Windows Hosts File ------------------------------
+  Buka File Explorer ke: C:\xampp\htdocs\admin_surat-main
+  Klik 2x (double click) file: tambah_hosts.bat
+  Saat jendela konfirmasi Windows (UAC) muncul, klik YES / YA.
+
+--- 3.3 Restart Apache ------------------------------------------------------
+  Buka XAMPP Control Panel, klik tombol STOP lalu START kembali pada Apache.
+
+
+================================================================================
+4. CARA MENJALANKAN APLIKASI SETIAP HARI (QUICK START)
+================================================================================
+
+  1. Buka XAMPP Control Panel ➔ Klik Start pada Apache dan MySQL.
+  2. Buka browser (Chrome/Edge/Firefox), ketik alamat:
+       http://e-surat.local/admin
+
+  Alternatif (Tanpa Apache VirtualHost):
+  Jalankan server internal PHP dari terminal folder proyek:
+       php -S localhost:8000 -t public server.php
+  Lalu buka: http://localhost:8000/admin
+
+
+================================================================================
+5. KONFIGURASI & PENGGUNAAN LARAVEL REVERB (REAL-TIME WEBSOCKET)
+================================================================================
+
+E-Surat Sekolah mendukung notifikasi langsung tanpa reload (Real-Time Broadcast)
+menggunakan server WebSocket Laravel Reverb.
+
+Mode Standar vs Real-Time:
+  - Mode Standar (Default) : Notifikasi otomatis tersimpan di database. User
+                             melihat notifikasi saat navigasi / refresh.
+  - Mode Real-Time (Reverb): Notifikasi popup muncul secara instan di layar
+                             user saat Admin menyetujui / Kepsek ttd surat.
+
+Cara Mengaktifkan Real-Time Reverb:
+  1. Buka file .env dan tambahkan variabel berikut:
+       BROADCAST_CONNECTION=reverb
+
+       REVERB_APP_ID=100001
+       REVERB_APP_KEY=esurat_reverb_key
+       REVERB_APP_SECRET=esurat_reverb_secret
+       REVERB_HOST=127.0.0.1
+       REVERB_PORT=8080
+       REVERB_SCHEME=http
+
+  2. Jalankan perintah pembersihan cache:
+       php artisan config:clear
+
+  3. Jalankan Server Reverb WebSocket di terminal tersendiri:
+       php artisan reverb:start
+
+CATATAN PENTING:
+ Jika Reverb TIDAK dijalankan, pesan warning konsol browser:
+ "WebSocket connection to ws://localhost:8080/ failed" adalah HAL WAJAR & AMAN.
+ Seluruh fungsi aplikasi tetap berjalan 100% normal.
+
+
+================================================================================
+6. MATRIKS AKUN LOGIN DEFAULT & HAK AKSES
+================================================================================
+
+Semua akun default dibuat otomatis oleh seeder (php artisan db:seed).
+Password untuk seluruh akun bawaan: password
+
++------------------------------+----------+------------------------------------+
+| Email                        | Role     | Nama & Keterangan Pengguna         |
++------------------------------+----------+------------------------------------+
+| admin@sekolah.sch.id         | admin    | Administrator Utama Sekolah        |
+| kepsek@sekolah.sch.id        | kepsek   | Drs. H. Ahmad Dahlan, M.Pd (Kepsek)|
+| gukar@sekolah.sch.id         | gukar    | Budi Santoso, S.Pd (Guru/Karyawan) |
+| siti.aminah@sekolah.sch.id   | gukar    | Siti Aminah, S.Si (Guru Fisika)    |
+| ahmad.dahlan@sekolah.sch.id  | gukar    | Ahmad Dahlan, S.Pd (Guru B. Indo)  |
++------------------------------+----------+------------------------------------+
+
+Contoh NIP Terdaftar untuk REGISTRASI MANDIRI Gukar:
+  - Dewi Lestari, S.Pd        : 199007202018012004
+  - Hendra Gunawan, S.Kom     : 199211122019031005
+
+Matriks Hak Akses:
+  - GUKAR  : Registrasi mandiri NIP, ajukan surat baru, lihat status sendiri,
+             unduh PDF resmi setelah ditandatangani.
+  - ADMIN  : Verifikasi/setujui/tolak pengajuan (penomoran otomatis), kelola
+             template surat (visual builder), import data karyawan via Excel,
+             pengaturan identitas sekolah/kop surat, kelola user & role.
+  - KEPSEK : Menandatangani digital surat disetujui (generate PDF resmi + QR),
+             pratinjau PDF, menolak surat jika ada perbaikan.
+
+
+================================================================================
+7. PANDUAN PENGGUNAAN LENGKAP PER PERAN (ROLE)
+================================================================================
+
+--- 7.1 GURU & KARYAWAN (Gukar) ---------------------------------------------
+  A. Registrasi Mandiri (Bagi Pegawai Baru):
+     1. Buka URL: http://e-surat.local/admin/register
+     2. Tahap 1: Masukkan NIP Anda yang sudah ada di Master Karyawan.
+     3. Tahap 2: Isi alamat email & password (min. 8 karakter + konfirmasi).
+     4. Tahap 3: Periksa kecocokan data, lalu klik "Aktifkan & Daftar Akun Gukar".
+
+  B. Mengajukan Surat Pengajuan Baru:
+     1. Login ke panel ➔ Menu "Pengajuan Surat" ➔ Klik "Buat Pengajuan Surat Baru".
+     2. Pilih Jenis Template Surat (Surat Tugas / Keterangan / Izin).
+     3. Isi kolom variabel yang dibutuhkan (Tujuan, Keperluan, Tanggal). Data
+        diri (Nama, NIP, Jabatan) terisi otomatis dari profil.
+     4. Klik "Ajukan Surat". Status awal: "Menunggu (Pending)".
+
+  C. Lacak Status & Download PDF:
+     - Pantau status pada tabel atau lonceng notifikasi.
+     - Setelah status berubah menjadi "Ditandatangani", klik tombol "Download PDF".
+
+--- 7.2 ADMINISTRATOR (Admin) -----------------------------------------------
+  A. Memproses Pengajuan Surat (Tahap 1):
+     - Buka menu "Pengajuan Surat".
+     - Klik "Setujui" ➔ Nomor surat terbuat otomatis, status menjadi "approved_admin".
+     - Klik "Tolak" ➔ Masukkan alasan penolakan, status menjadi "rejected".
+
+  B. Kelola Template Surat (No-Code Visual Builder):
+     - Buka menu "Template Surat".
+     - Gunakan preset instan (Surat Tugas / Keterangan / Izin) atau buat baru.
+     - Format placeholder dinamis menggunakan kurung kurawal: {nama_variabel}.
+     - Tentukan Kode Surat (mis. SPD, SK, SI) untuk penomoran otomatis.
+
+  C. Import Batch Data Karyawan (Excel):
+     - Buka menu "Data Karyawan" ➔ Klik tombol "Import Karyawan".
+     - Unduh template Excel, isi kolom Nama, NIP, Jabatan, lalu unggah file.
+
+  D. Pengaturan Sekolah & Kop Surat:
+     - Buka menu "Pengaturan Sekolah".
+     - Isi Identitas Sekolah, Nama Kepsek, NIP, serta unggah Logo & Stempel.
+
+--- 7.3 KEPALA SEKOLAH (Kepsek) ---------------------------------------------
+  A. Penandatanganan Digital (Tahap Akhir):
+     - Buka menu "Pengajuan Surat" ➔ Cari surat berstatus "Disetujui Admin".
+     - Klik tombol "Tandatangani Surat".
+     - Sistem otomatis mencetak PDF Resmi lengkap dengan Kop Sekolah, Stempel,
+       dan QR Code Keaslian. Status berubah menjadi "Ditandatangani (Signed)".
+
+  B. Pratinjau Dokumen:
+     - Klik tombol "Preview PDF" untuk memeriksa tata letak surat sebelum ttd.
+
+
+================================================================================
+8. ALUR STATUS SURAT & AUDIT TRAIL LOG
+================================================================================
+
+  [pending]          -> [approved_admin]   -> [signed]
+  (Menunggu Admin)      (Disetujui Admin)     (Ditandatangani Kepsek + PDF)
+                        (Nomor Surat Terbit)  (QR Code Keaslian Aktif)
+
+  [pending]          -> [rejected]            (Ditolak oleh Admin)
+  [approved_admin]   -> [rejected]            (Ditolak oleh Kepsek)
+
+SETIAP PERUBAHAN STATUS dicatat dalam Audit Log (letter_status_logs):
+Pengubah, Status Asal ➔ Status Baru, Waktu, Alasan/Catatan, IP, & Browser.
+
+
+================================================================================
+9. KEAMANAN & VERIFIKASI KEASLIAN SURAT VIA QR CODE
+================================================================================
+
+1. QR Code pada PDF surat berisi URL verifikasi terenkripsi (Signed URL HMAC SHA256).
+2. Memindai QR Code dengan kamera HP akan membuka Halaman Verifikasi Publik:
+   http://e-surat.local/letter/verify/{uuid}?sig=...
+3. Jika dokumen ASLI: Menampilkan rincian resmi nomor surat, tanggal ttd, nama
+   pemohon, dan isi surat.
+4. Jika QR Code dipalsukan / URL diubah: Sistem menolak dengan error 403 Forbidden.
+5. Halaman verifikasi dilindungi Rate Limiting (Maksimal 60 akses/menit per IP).
+
+
+================================================================================
+10. TROUBLESHOOTING & FAQ (PEMECAHAN MASALAH)
+================================================================================
+
+  1) Error "DNS_PROBE_FINISHED_NXDOMAIN" saat buka http://e-surat.local
+     Solusi: Klik 2x file `tambah_hosts.bat` di folder proyek, lalu restart Apache.
+
+  2) Warning "WebSocket connection to ws://localhost:8080/ failed"
+     Solusi: Pesan ini wajar jika Server Reverb (`php artisan reverb:start`)
+     tidak dijalankan. Aplikasi tetap berfungsi normal 100%.
+
+  3) Error "Class 'Illuminate\Foundation\Application' not found"
+     Solusi: Jalankan `composer install` di terminal folder proyek.
+
+  4) Error "ext-intl / ext-gd / ext-zip is missing"
+     Solusi: Buka `C:\xampp\php\php.ini`, hapus tanda `;` pada ekstensi tersebut,
+     lalu restart Apache.
+
+  5) Error "SQLSTATE[HY000] [2002] Connection refused"
+     Solusi: Buka XAMPP Control Panel, klik START pada MySQL.
+
+  6) Error "Collation utf8mb4_0900_ai_ci not supported"
+     Solusi: Ubah DB_COLLATION=utf8mb4_general_ci di `.env`, lalu
+     jalankan `php artisan config:clear`.
+
+  7) PDF tidak bisa diunduh / Storage Error 404
+     Solusi: Jalankan `php artisan storage:link`.
+
+  8) Perubahan .env atau tampilan tidak berefek
+     Solusi: Bersihkan cache dengan perintah:
+       php artisan config:clear
+       php artisan cache:clear
+       php artisan view:clear
+
+
+================================================================================
+11. PEMELIHARAAN, BACKUP DATABASE & LOG
+================================================================================
+
+  - Lokasi File PDF Resmi : storage/app/public/pdfs/
+  - Backup Database (CMD):
+      C:\xampp\mysql\bin\mysqldump -u root e_surat > backup_esurat.sql
+  - Restore Database (CMD):
+      C:\xampp\mysql\bin\mysql -u root e_surat < backup_esurat.sql
+  - Jalankan Worker Antrian (Queue):
+      php artisan queue:work
+  - Jalankan Server Reverb WebSocket:
+      php artisan reverb:start
+
+
+================================================================================
+12. PENGUJIAN OTOMATIS (AUTOMATED TESTING)
+================================================================================
+
+  Jalankan seluruh test:
+    php artisan test
+
+  (Menggunakan SQLite In-Memory. 100% AMAN tanpa mengubah database XAMPP Anda).
+
+================================================================================
+  SELESAI - E-SURAT SEKOLAH DIGITAL SYSTEM
+================================================================================
