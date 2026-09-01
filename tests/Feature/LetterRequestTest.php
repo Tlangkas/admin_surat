@@ -342,4 +342,36 @@ class LetterRequestTest extends TestCase
         $this->assertTrue($kepsek->can('previewPdf', $letterRequest));
         $this->assertFalse($gukar->can('sign', $letterRequest));
     }
+
+    public function test_letter_request_handles_jabatan_and_multiline_alamat_variables(): void
+    {
+        $user = User::factory()->create(['role' => 'gukar']);
+
+        $template = LetterTemplate::create([
+            'name' => 'Surat Keterangan Domisili Guru',
+            'content' => '<p>Nama: {{ nama }}</p><p>Jabatan: {{ jabatan }}</p><p>Alamat: {{ alamat }}</p><p>Alamat Tujuan: {{ alamat_tujuan }}</p>',
+            'variables' => ['nama', 'jabatan', 'alamat', 'alamat_tujuan'],
+            'is_active' => true,
+        ]);
+
+        $letterRequest = LetterRequest::create([
+            'user_id' => $user->id,
+            'template_id' => $template->id,
+            'status' => 'pending',
+            'payload_data' => [
+                'nama' => 'Bambang Sudiro',
+                'jabatan' => 'Guru Matematika & Wali Kelas',
+                'alamat' => "Jl. Slamet Riyadi No. 45\nRT 02 / RW 05, Surakarta",
+                'alamat_tujuan' => 'Dinas Pendidikan Provinsi Jawa Tengah',
+            ],
+        ]);
+
+        $rendered = $letterRequest->renderContent();
+
+        $this->assertStringContainsString('Bambang Sudiro', $rendered);
+        $this->assertStringContainsString('Guru Matematika &amp; Wali Kelas', $rendered);
+        $this->assertStringContainsString('Jl. Slamet Riyadi No. 45<br />', $rendered);
+        $this->assertStringContainsString('RT 02 / RW 05, Surakarta', $rendered);
+        $this->assertStringContainsString('Dinas Pendidikan Provinsi Jawa Tengah', $rendered);
+    }
 }

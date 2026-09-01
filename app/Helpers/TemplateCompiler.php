@@ -64,14 +64,15 @@ class TemplateCompiler
                     'kelas' => 'Kelas',
                     'jurusan' => 'Jurusan / Kompetensi',
                     'jabatan' => 'Jabatan',
+                    'alamat', 'alamat_domisili', 'alamat_tinggal' => 'Alamat / Tempat Tinggal',
                     'sekolah', 'nama_sekolah' => 'Unit Kerja / Sekolah',
                     default => Str::headline($cleanKey),
                 };
 
                 $html[] = '    <tr>';
-                $html[] = '        <td style="width: 28%; padding: 4px 0;">' . e($label) . '</td>';
-                $html[] = '        <td style="width: 3%; padding: 4px 0;">:</td>';
-                $html[] = '        <td style="padding: 4px 0;' . ($cleanKey === 'nama' ? ' font-weight: bold;' : '') . '">{{ ' . $cleanKey . ' }}</td>';
+                $html[] = '        <td style="width: 28%; padding: 4px 0; vertical-align: top;">' . e($label) . '</td>';
+                $html[] = '        <td style="width: 3%; padding: 4px 0; vertical-align: top;">:</td>';
+                $html[] = '        <td style="padding: 4px 0; vertical-align: top;' . ($cleanKey === 'nama' ? ' font-weight: bold;' : '') . '">{{ ' . $cleanKey . ' }}</td>';
                 $html[] = '    </tr>';
 
                 $allVars[] = $cleanKey;
@@ -98,6 +99,7 @@ class TemplateCompiler
 
                 $label = match (strtolower($cleanKey)) {
                     'tujuan' => 'Tujuan',
+                    'alamat_tujuan', 'alamat_lokasi' => 'Alamat Tujuan / Lokasi',
                     'keperluan', 'maksud' => 'Maksud / Keperluan',
                     'nama_kegiatan', 'kegiatan' => 'Nama Kegiatan / Lomba',
                     'tempat_kegiatan', 'lokasi' => 'Tempat Pelaksanaan',
@@ -109,9 +111,9 @@ class TemplateCompiler
                 };
 
                 $html[] = '    <tr>';
-                $html[] = '        <td style="width: 28%; padding: 4px 0;">' . e($label) . '</td>';
-                $html[] = '        <td style="width: 3%; padding: 4px 0;">:</td>';
-                $html[] = '        <td style="padding: 4px 0;">{{ ' . $cleanKey . ' }}</td>';
+                $html[] = '        <td style="width: 28%; padding: 4px 0; vertical-align: top;">' . e($label) . '</td>';
+                $html[] = '        <td style="width: 3%; padding: 4px 0; vertical-align: top;">:</td>';
+                $html[] = '        <td style="padding: 4px 0; vertical-align: top;">{{ ' . $cleanKey . ' }}</td>';
                 $html[] = '    </tr>';
 
                 $allVars[] = $cleanKey;

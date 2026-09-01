@@ -178,6 +178,8 @@ class LetterRequestResource extends Resource
                                 'tgl_berangkat', 'tanggal_berangkat' => 'Tanggal Berangkat',
                                 'tgl_kembali', 'tanggal_kembali' => 'Tanggal Kembali',
                                 'nama_sekolah' => 'Nama Sekolah',
+                                'alamat', 'alamat_domisili', 'alamat_tinggal' => 'Alamat / Tempat Tinggal',
+                                'alamat_tujuan', 'alamat_lokasi' => 'Alamat Tujuan',
                                 default => Str::headline($rawLabel),
                             };
 
@@ -266,7 +268,7 @@ class LetterRequestResource extends Resource
                                         return $parsed ? $parsed->translatedFormat('j F Y') : $state;
                                     })
                                     ->required();
-                            } elseif (str_contains($lowerKey, 'keperluan') || str_contains($lowerKey, 'maksud') || str_contains($lowerKey, 'keterangan')) {
+                            } elseif (str_contains($lowerKey, 'keperluan') || str_contains($lowerKey, 'maksud') || str_contains($lowerKey, 'keterangan') || str_contains($lowerKey, 'alamat')) {
                                 $field = Textarea::make("payload_data.{$cleanKey}")
                                     ->label($cleanLabel)
                                     ->rows(3)
