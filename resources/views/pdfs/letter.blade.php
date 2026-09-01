@@ -110,38 +110,27 @@
         }
 
         .footer-table td {
-            vertical-align: top;
+            vertical-align: bottom;
         }
 
         .qr-section {
-            width: 45%;
+            width: 40%;
             text-align: left;
-            padding-top: 10px;
+            padding-bottom: 5px;
         }
 
         .qr-box {
             display: inline-block;
-            text-align: center;
-            padding: 6px;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            background-color: #fff;
+            text-align: left;
         }
 
         .qr-box svg {
-            width: 85px;
-            height: 85px;
-        }
-
-        .qr-text {
-            font-size: 7.5pt;
-            color: #475569;
-            margin-top: 4px;
-            font-family: sans-serif;
+            width: 75px;
+            height: 75px;
         }
 
         .ttd-section {
-            width: 55%;
+            width: 60%;
             text-align: right;
         }
 
@@ -152,53 +141,14 @@
         }
 
         .ttd-image {
-            height: 55px;
+            height: 60px;
             width: auto;
-            max-height: 60px;
+            max-height: 65px;
             margin: 4px 0;
         }
 
         .ttd-space {
-            height: 55px;
-        }
-
-        /* Stempel Tanda Tangan Digital (TTE) */
-        .tte-stamp {
-            display: block;
-            margin: 6px 0;
-            padding: 6px 10px;
-            border: 1.5px solid #0284c7;
-            border-radius: 5px;
-            background-color: #f0f9ff;
-            width: 210px;
-            font-family: sans-serif;
-        }
-
-        .tte-header {
-            font-size: 7.5pt;
-            font-weight: bold;
-            color: #0369a1;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .tte-check {
-            color: #16a34a;
-            font-weight: bold;
-            font-size: 9pt;
-        }
-
-        .tte-body {
-            font-size: 7pt;
-            color: #334155;
-            margin-top: 2px;
-        }
-
-        .tte-id {
-            font-size: 6.5pt;
-            color: #64748b;
-            font-family: monospace;
-            margin-top: 2px;
+            height: 60px;
         }
     </style>
 </head>
@@ -233,7 +183,6 @@
             <td class="qr-section">
                 <div class="qr-box">
                     {!! $qrCodeSvg !!}
-                    <div class="qr-text">Dokumen Resmi E-Surat<br>Scan untuk Verifikasi</div>
                 </div>
             </td>
             <td class="ttd-section">
@@ -244,12 +193,6 @@
                     @if($settings->getTtdKepsekBase64())
                         <div>
                             <img src="{{ $settings->getTtdKepsekBase64() }}" alt="TTD" class="ttd-image">
-                        </div>
-                    @elseif($letterRequest->isSigned())
-                        <div class="tte-stamp">
-                            <div class="tte-header"><span class="tte-check">✓</span> DITANDATANGANI DIGITAL</div>
-                            <div class="tte-body">Sistem Layanan E-Surat Resmi</div>
-                            <div class="tte-id">ID: {{ substr($letterRequest->uuid, 0, 18) }}...</div>
                         </div>
                     @else
                         <div class="ttd-space"></div>
