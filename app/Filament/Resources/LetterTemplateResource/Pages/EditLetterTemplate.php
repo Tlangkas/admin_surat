@@ -31,35 +31,48 @@ class EditLetterTemplate extends EditRecord
     }
 
     /**
-     * Restore isian No-Code Builder ke form saat edit.
-     *
-     * Untuk template legacy (dibuat sebelum kolom builder dipersist), isian
-     * builder kosong — paksa mode HTML lanjutan agar konten yang sudah ada
-     * tidak terhapus oleh kompilasi ulang yang tidak disengaja.
+     * Pastikan halaman edit SELALU membuka formulir No-Code Visual Form Builder
+     * sama persis seperti saat pembuatan template baru.
      */
     protected function mutateFormDataBeforeFill(array $data): array
     {
+        /** @var \App\Models\LetterTemplate $record */
         $record = $this->getRecord();
 
-        $hasBuilderState = $record->title_text !== null
-            || $record->opening_text !== null
-            || $record->middle_text !== null
-            || $record->closing_text !== null
-            || ! empty($record->identity_fields)
-            || ! empty($record->detail_fields);
+        $data['use_advanced_html'] = (bool) ($record->use_advanced_html ?? false);
 
-        if (! $record->use_advanced_html && $hasBuilderState) {
-            $data['use_advanced_html'] = false;
-            $data['title_text'] = $record->title_text;
-            $data['opening_text'] = $record->opening_text;
-            $data['middle_text'] = $record->middle_text;
-            $data['closing_text'] = $record->closing_text;
-            $data['identity_fields'] = $record->identity_fields ?? [];
-            $data['detail_fields'] = $record->detail_fields ?? [];
-        } elseif (! $hasBuilderState && ! empty($record->content)) {
-            // Template legacy (konten sudah ada, tanpa isian builder): paksa mode
-            // HTML lanjutan agar konten yang ada tidak terhapus saat disimpan.
-            $data['use_advanced_html'] = true;
+        // Judul resmi
+        $data['title_text'] = $record->title_text ?: strtoupper((string) $record->name);
+
+        // Paragraf pembuka
+        $data['opening_text'] = $record->opening_text ?: 'Yang bertanda tangan di bawah ini Kepala Sekolah menerangkan bahwa:';
+
+        // Paragraf antara
+        $data['middle_text'] = $record->middle_text !== null ? $record->middle_text : 'Diberikan tugas untuk melaksanakan kegiatan dengan rincian sebagai berikut:';
+
+        // Paragraf penutup
+        $data['closing_text'] = $record->closing_text ?: 'Demikian surat ini dibuat untuk dipergunakan sebagaimana mestinya dan dilaksanakan dengan penuh tanggung jawab.';
+
+        // Identitas fields
+        if (! empty($record->identity_fields) && is_array($record->identity_fields)) {
+            $data['identity_fields'] = $record->identity_fields;
+        } else {
+            // Deteksi dari variables yang ada di template
+            $vars = $record->variables ?? [];
+            $identityKeys = ['nama', 'nip', 'jabatan', 'alamat', 'sekolah', 'nisn', 'kelas', 'jurusan'];
+            $matched = array_values(array_intersect($identityKeys, $vars));
+            $data['identity_fields'] = ! empty($matched) ? $matched : ['nama', 'nip', 'jabatan'];
+        }
+
+        // Detail fields
+        if (! empty($record->detail_fields) && is_array($record->detail_fields)) {
+            $data['detail_fields'] = $record->detail_fields;
+        } else {
+            // Deteksi dari variables yang ada di template
+            $vars = $record->variables ?? [];
+            $detailKeys = ['daftar_peserta', 'nama_kegiatan', 'tujuan', 'alamat_tujuan', 'keperluan', 'tanggal_berangkat', 'tanggal_kembali', 'keterangan'];
+            $matched = array_values(array_intersect($detailKeys, $vars));
+            $data['detail_fields'] = ! empty($matched) ? $matched : ['tujuan', 'keperluan', 'tanggal_berangkat', 'tanggal_kembali'];
         }
 
         return $data;

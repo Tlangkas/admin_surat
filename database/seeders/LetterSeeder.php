@@ -14,8 +14,7 @@ use Illuminate\Database\Seeder;
  * Membuat:
  *   1. Template "Surat Tugas Perjalanan Dinas" (Guru / Karyawan).
  *   2. Template "Surat Dispensasi Siswa" (Multi-Peserta).
- *   3. Template "Surat Tugas Kontingen Siswa" (Multi-Peserta).
- *   4. Sample LetterRequest untuk testing alur kerja.
+ *   3. Sample LetterRequest untuk testing alur kerja.
  */
 class LetterSeeder extends Seeder
 {
@@ -49,16 +48,25 @@ class LetterSeeder extends Seeder
 </div>
 HTML;
 
-        $templateSPD = LetterTemplate::create([
-            'name' => 'Surat Tugas Perjalanan Dinas',
-            'letter_code' => 'SPD',
-            'content' => $templateContentSPD,
-            'variables' => [
-                'nomor_surat', 'nama', 'nip', 'jabatan',
-                'tujuan', 'keperluan', 'tanggal_berangkat', 'tanggal_kembali',
-            ],
-            'is_active' => true,
-        ]);
+        $templateSPD = LetterTemplate::updateOrCreate(
+            ['name' => 'Surat Tugas Perjalanan Dinas'],
+            [
+                'letter_code' => 'SPD',
+                'title_text' => 'SURAT TUGAS PERJALANAN DINAS',
+                'opening_text' => 'Yang bertanda tangan di bawah ini, Kepala Sekolah menerangkan bahwa:',
+                'middle_text' => 'Diberikan tugas untuk melaksanakan perjalanan dinas ke:',
+                'closing_text' => 'Demikian surat tugas ini dibuat untuk dipergunakan sebagaimana mestinya dan dilaksanakan dengan penuh tanggung jawab.',
+                'identity_fields' => ['nama', 'nip', 'jabatan'],
+                'detail_fields' => ['tujuan', 'keperluan', 'tanggal_berangkat', 'tanggal_kembali'],
+                'use_advanced_html' => false,
+                'content' => $templateContentSPD,
+                'variables' => [
+                    'nomor_surat', 'nama', 'nip', 'jabatan',
+                    'tujuan', 'keperluan', 'tanggal_berangkat', 'tanggal_kembali',
+                ],
+                'is_active' => true,
+            ]
+        );
 
         $templateContentDispen = <<<'HTML'
 <div style="text-align: center; margin-bottom: 25px;">
@@ -85,16 +93,25 @@ HTML;
 </div>
 HTML;
 
-        $templateDispen = LetterTemplate::create([
-            'name' => 'Surat Dispensasi Siswa',
-            'letter_code' => 'DISPEN',
-            'content' => $templateContentDispen,
-            'variables' => [
-                'nomor_surat', 'daftar_peserta', 'nama_kegiatan', 'tujuan',
-                'tanggal_berangkat', 'tanggal_kembali',
-            ],
-            'is_active' => true,
-        ]);
+        $templateDispen = LetterTemplate::updateOrCreate(
+            ['name' => 'Surat Dispensasi Siswa'],
+            [
+                'letter_code' => 'DISPEN',
+                'title_text' => 'SURAT DISPENSASI SISWA',
+                'opening_text' => 'Yang bertanda tangan di bawah ini, Kepala Sekolah memberikan dispensasi / izin meninggalkan Kegiatan Belajar Mengajar (KBM) kepada siswa-siswi terlampir di bawah ini:',
+                'middle_text' => 'Untuk mengikuti agenda kegiatan / perlombaan dengan rincian sebagai berikut:',
+                'closing_text' => 'Demikian surat dispensasi ini diberikan agar siswa yang bersangkutan dapat melaksanakan tugas dengan sebaik-baiknya.',
+                'identity_fields' => ['nama', 'nip', 'jabatan'],
+                'detail_fields' => ['daftar_peserta', 'nama_kegiatan', 'tujuan', 'tanggal_berangkat', 'tanggal_kembali'],
+                'use_advanced_html' => false,
+                'content' => $templateContentDispen,
+                'variables' => [
+                    'nomor_surat', 'daftar_peserta', 'nama_kegiatan', 'tujuan',
+                    'tanggal_berangkat', 'tanggal_kembali',
+                ],
+                'is_active' => true,
+            ]
+        );
 
         $payloadBase = [
             'nama' => 'Guru Karyawan',
@@ -102,50 +119,56 @@ HTML;
             'jabatan' => 'Guru Kelas',
         ];
 
-        LetterRequest::create([
-            'user_id' => 3,
-            'template_id' => $templateSPD->id,
-            'status' => 'signed',
-            'payload_data' => array_merge($payloadBase, [
-                'nomor_surat' => '421/001/SPD/2026',
-                'tujuan' => 'Dinas Pendidikan Kota Surakarta',
-                'keperluan' => 'Mengikuti Sosialisasi Kurikulum Merdeka',
-                'tanggal_berangkat' => '2 Januari 2026',
-                'tanggal_kembali' => '2 Januari 2026',
-            ]),
-        ]);
+        LetterRequest::firstOrCreate(
+            ['payload_data->nomor_surat' => '421/001/SPD/2026'],
+            [
+                'user_id' => 3,
+                'template_id' => $templateSPD->id,
+                'status' => 'signed',
+                'payload_data' => array_merge($payloadBase, [
+                    'nomor_surat' => '421/001/SPD/2026',
+                    'tujuan' => 'Dinas Pendidikan Kota Surakarta',
+                    'keperluan' => 'Mengikuti Sosialisasi Kurikulum Merdeka',
+                    'tanggal_berangkat' => '2 Januari 2026',
+                    'tanggal_kembali' => '2 Januari 2026',
+                ]),
+            ]
+        );
 
-        LetterRequest::create([
-            'user_id' => 3,
-            'template_id' => $templateDispen->id,
-            'status' => 'approved_admin',
-            'payload_data' => [
-                'nomor_surat' => '421/002/DISPEN/2026',
-                'nama_kegiatan' => 'Olimpiade Sains Nasional (OSN) Tingkat Kota',
-                'tujuan' => 'SMA Negeri 1 Surakarta',
-                'tanggal_berangkat' => '15 Maret 2026',
-                'tanggal_kembali' => '16 Maret 2026',
-                'daftar_peserta' => [
-                    [
-                        'nama' => 'Ahmad Rizky Pratama',
-                        'identitas' => '0051234501',
-                        'kelas_jabatan' => 'X RPL 1',
-                        'peran' => 'Peserta Bidang Informatika',
-                    ],
-                    [
-                        'nama' => 'Anisa Rahmawati',
-                        'identitas' => '0051234502',
-                        'kelas_jabatan' => 'X RPL 1',
-                        'peran' => 'Peserta Bidang Matematika',
-                    ],
-                    [
-                        'nama' => 'Bagus Kurniawan',
-                        'identitas' => '0049876503',
-                        'kelas_jabatan' => 'XI TKJ 2',
-                        'peran' => 'Peserta Bidang Fisika',
+        LetterRequest::firstOrCreate(
+            ['payload_data->nomor_surat' => '421/002/DISPEN/2026'],
+            [
+                'user_id' => 3,
+                'template_id' => $templateDispen->id,
+                'status' => 'approved_admin',
+                'payload_data' => [
+                    'nomor_surat' => '421/002/DISPEN/2026',
+                    'nama_kegiatan' => 'Olimpiade Sains Nasional (OSN) Tingkat Kota',
+                    'tujuan' => 'SMA Negeri 1 Surakarta',
+                    'tanggal_berangkat' => '15 Maret 2026',
+                    'tanggal_kembali' => '16 Maret 2026',
+                    'daftar_peserta' => [
+                        [
+                            'nama' => 'Ahmad Rizky Pratama',
+                            'identitas' => '0051234501',
+                            'kelas_jabatan' => 'X RPL 1',
+                            'peran' => 'Peserta Bidang Informatika',
+                        ],
+                        [
+                            'nama' => 'Anisa Rahmawati',
+                            'identitas' => '0051234502',
+                            'kelas_jabatan' => 'X RPL 1',
+                            'peran' => 'Peserta Bidang Matematika',
+                        ],
+                        [
+                            'nama' => 'Bagus Kurniawan',
+                            'identitas' => '0049876503',
+                            'kelas_jabatan' => 'XI TKJ 2',
+                            'peran' => 'Peserta Bidang Fisika',
+                        ],
                     ],
                 ],
-            ],
-        ]);
+            ]
+        );
     }
 }
