@@ -38,6 +38,7 @@
         .logo-img {
             width: 75px;
             height: auto;
+            max-height: 80px;
         }
 
         .header-text {
@@ -153,6 +154,7 @@
         .ttd-image {
             height: 55px;
             width: auto;
+            max-height: 60px;
             margin: 4px 0;
         }
 
@@ -204,9 +206,9 @@
     {{-- Header Kop Surat Resmi --}}
     <table class="header-table">
         <tr>
-            @if($settings->logo_path && file_exists(storage_path('app/public/' . $settings->logo_path)))
+            @if($settings->getLogoBase64())
                 <td class="logo-cell">
-                    <img src="{{ storage_path('app/public/' . $settings->logo_path) }}" alt="Logo" class="logo-img">
+                    <img src="{{ $settings->getLogoBase64() }}" alt="Logo" class="logo-img">
                 </td>
             @endif
             <td class="header-text">
@@ -239,9 +241,9 @@
                     <p style="margin: 0;">{{ $settings->kota_kabupaten ?? 'Surakarta' }}, {{ now()->translatedFormat('d F Y') }}</p>
                     <p style="font-weight: bold; margin: 4px 0 0 0;">{{ $settings->kepala_sekolah_jabatan ?? 'Kepala Sekolah' }}</p>
                     
-                    @if($settings->ttd_kepsek_path && file_exists(storage_path('app/public/' . $settings->ttd_kepsek_path)))
+                    @if($settings->getTtdKepsekBase64())
                         <div>
-                            <img src="{{ storage_path('app/public/' . $settings->ttd_kepsek_path) }}" alt="TTD" class="ttd-image">
+                            <img src="{{ $settings->getTtdKepsekBase64() }}" alt="TTD" class="ttd-image">
                         </div>
                     @elseif($letterRequest->isSigned())
                         <div class="tte-stamp">

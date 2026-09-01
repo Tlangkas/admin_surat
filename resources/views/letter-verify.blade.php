@@ -119,11 +119,39 @@
 
                 @if(is_array($letterRequest->payload_data))
                     @foreach($letterRequest->payload_data as $key => $value)
-                        @if(!in_array(strtolower((string)$key), ['nomor_surat', 'nama', 'nip', 'jabatan', 'sekolah', 'nama_sekolah']) && !empty($value))
-                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start py-1.5 border-b border-slate-200/60 gap-1">
-                            <span class="text-slate-500 font-medium capitalize">{{ \Illuminate\Support\Str::headline($key) }}</span>
-                            <span class="text-slate-900 sm:text-right min-w-0 max-w-full break-words">{!! nl2br(e($value)) !!}</span>
-                        </div>
+                        @if(in_array(strtolower((string)$key), ['daftar_peserta', 'peserta']) && is_array($value) && !empty($value))
+                            <div class="py-2 border-b border-slate-200/60">
+                                <span class="text-slate-500 font-medium block mb-2">Daftar Peserta / Kontingen</span>
+                                <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+                                    <table class="min-w-full divide-y divide-slate-200 text-xs">
+                                        <thead class="bg-slate-50">
+                                            <tr>
+                                                <th class="px-2.5 py-2 text-center text-slate-500 font-semibold w-8">No</th>
+                                                <th class="px-2.5 py-2 text-left text-slate-500 font-semibold">Nama</th>
+                                                <th class="px-2.5 py-2 text-left text-slate-500 font-semibold">NISN / NIP</th>
+                                                <th class="px-2.5 py-2 text-left text-slate-500 font-semibold">Kelas / Jabatan</th>
+                                                <th class="px-2.5 py-2 text-left text-slate-500 font-semibold">Peran</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100">
+                                            @foreach($value as $idx => $p)
+                                                <tr>
+                                                    <td class="px-2.5 py-1.5 text-center text-slate-500">{{ $idx + 1 }}</td>
+                                                    <td class="px-2.5 py-1.5 font-semibold text-slate-900">{{ $p['nama'] ?? '-' }}</td>
+                                                    <td class="px-2.5 py-1.5 font-mono text-slate-600">{{ $p['identitas'] ?? $p['nisn'] ?? $p['nip'] ?? '-' }}</td>
+                                                    <td class="px-2.5 py-1.5 text-slate-700">{{ $p['kelas_jabatan'] ?? $p['kelas'] ?? $p['jabatan'] ?? '-' }}</td>
+                                                    <td class="px-2.5 py-1.5 text-slate-600">{{ $p['peran'] ?? $p['keterangan'] ?? '-' }}</td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        @elseif(!in_array(strtolower((string)$key), ['nomor_surat', 'nama', 'nip', 'jabatan', 'sekolah', 'nama_sekolah', 'daftar_peserta', 'peserta']) && !empty($value) && !is_array($value))
+                            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start py-1.5 border-b border-slate-200/60 gap-1">
+                                <span class="text-slate-500 font-medium capitalize">{{ \Illuminate\Support\Str::headline($key) }}</span>
+                                <span class="text-slate-900 sm:text-right min-w-0 max-w-full break-words">{!! nl2br(e($value)) !!}</span>
+                            </div>
                         @endif
                     @endforeach
                 @endif

@@ -6,6 +6,7 @@ namespace Tests\Unit;
 
 use App\Models\SchoolSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class SchoolSettingsTest extends TestCase
@@ -53,6 +54,18 @@ class SchoolSettingsTest extends TestCase
         $this->assertStringContainsString('storage/logos/logo.png', $settings->logo_url);
     }
 
+    public function test_logo_base64_returns_data_uri_when_file_exists(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('logos/test.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='));
+
+        $settings = SchoolSettings::getInstance();
+        $settings->update(['logo_path' => 'logos/test.png']);
+
+        $this->assertNotNull($settings->getLogoBase64());
+        $this->assertStringStartsWith('data:image/png;base64,', $settings->getLogoBase64());
+    }
+
     public function test_ttd_kepsek_url_attribute(): void
     {
         $settings = SchoolSettings::getInstance();
@@ -61,6 +74,18 @@ class SchoolSettingsTest extends TestCase
 
         $settings->update(['ttd_kepsek_path' => 'ttd/kepsek.png']);
         $this->assertStringContainsString('storage/ttd/kepsek.png', $settings->ttd_kepsek_url);
+    }
+
+    public function test_ttd_kepsek_base64_returns_data_uri_when_file_exists(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('ttd/kepsek.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='));
+
+        $settings = SchoolSettings::getInstance();
+        $settings->update(['ttd_kepsek_path' => 'ttd/kepsek.png']);
+
+        $this->assertNotNull($settings->getTtdKepsekBase64());
+        $this->assertStringStartsWith('data:image/png;base64,', $settings->getTtdKepsekBase64());
     }
 
     public function test_alamat_lengkap_combines_alamat_and_kode_pos(): void

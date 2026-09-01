@@ -12,14 +12,16 @@ use Illuminate\Database\Seeder;
  * Seeder: LetterSeeder
  *
  * Membuat:
- *   1. Template "Surat Jalan" resmi yang bersih tanpa tag wrapper ganda.
- *   2. Sample LetterRequest dengan berbagai status untuk testing.
+ *   1. Template "Surat Tugas Perjalanan Dinas" (Guru / Karyawan).
+ *   2. Template "Surat Dispensasi Siswa" (Multi-Peserta).
+ *   3. Template "Surat Tugas Kontingen Siswa" (Multi-Peserta).
+ *   4. Sample LetterRequest untuk testing alur kerja.
  */
 class LetterSeeder extends Seeder
 {
     public function run(): void
     {
-        $templateContent = <<<'HTML'
+        $templateContentSPD = <<<'HTML'
 <div style="text-align: center; margin-bottom: 25px;">
     <div style="font-size: 13pt; font-weight: bold; text-decoration: underline; letter-spacing: 0.5px;">SURAT TUGAS PERJALANAN DINAS</div>
     <div style="font-size: 11pt; margin-top: 4px;">Nomor: {{ nomor_surat }}</div>
@@ -47,9 +49,10 @@ class LetterSeeder extends Seeder
 </div>
 HTML;
 
-        $template = LetterTemplate::create([
-            'name' => 'Surat Jalan',
-            'content' => $templateContent,
+        $templateSPD = LetterTemplate::create([
+            'name' => 'Surat Tugas Perjalanan Dinas',
+            'letter_code' => 'SPD',
+            'content' => $templateContentSPD,
             'variables' => [
                 'nomor_surat', 'nama', 'nip', 'jabatan',
                 'tujuan', 'keperluan', 'tanggal_berangkat', 'tanggal_kembali',
@@ -57,15 +60,51 @@ HTML;
             'is_active' => true,
         ]);
 
+        $templateContentDispen = <<<'HTML'
+<div style="text-align: center; margin-bottom: 25px;">
+    <div style="font-size: 13pt; font-weight: bold; text-decoration: underline; letter-spacing: 0.5px;">SURAT DISPENSASI SISWA</div>
+    <div style="font-size: 11pt; margin-top: 4px;">Nomor: {{ nomor_surat }}</div>
+</div>
+
+<div class="isi">
+    <p>Yang bertanda tangan di bawah ini, Kepala Sekolah memberikan dispensasi / izin meninggalkan Kegiatan Belajar Mengajar (KBM) kepada siswa-siswi terlampir di bawah ini:</p>
+
+    {{ daftar_peserta }}
+
+    <p style="margin-top: 15px;">Untuk mengikuti agenda kegiatan / perlombaan dengan rincian sebagai berikut:</p>
+    <table class="table-data">
+        <tr><td style="width: 160px;">Nama Kegiatan</td><td style="width: 15px;">:</td><td><strong>{{ nama_kegiatan }}</strong></td></tr>
+        <tr><td>Tempat / Lokasi</td><td>:</td><td>{{ tujuan }}</td></tr>
+        <tr><td>Tanggal Berangkat</td><td>:</td><td>{{ tanggal_berangkat }}</td></tr>
+        <tr><td>Tanggal Kembali</td><td>:</td><td>{{ tanggal_kembali }}</td></tr>
+    </table>
+
+    <p style="margin-top: 15px; text-align: justify;">
+        Demikian surat dispensasi ini diberikan agar siswa yang bersangkutan dapat melaksanakan tugas dengan sebaik-baiknya.
+    </p>
+</div>
+HTML;
+
+        $templateDispen = LetterTemplate::create([
+            'name' => 'Surat Dispensasi Siswa',
+            'letter_code' => 'DISPEN',
+            'content' => $templateContentDispen,
+            'variables' => [
+                'nomor_surat', 'daftar_peserta', 'nama_kegiatan', 'tujuan',
+                'tanggal_berangkat', 'tanggal_kembali',
+            ],
+            'is_active' => true,
+        ]);
+
         $payloadBase = [
             'nama' => 'Guru Karyawan',
-            'nip' => '1234567890',
+            'nip' => '198501012010011001',
             'jabatan' => 'Guru Kelas',
         ];
 
         LetterRequest::create([
             'user_id' => 3,
-            'template_id' => $template->id,
+            'template_id' => $templateSPD->id,
             'status' => 'signed',
             'payload_data' => array_merge($payloadBase, [
                 'nomor_surat' => '421/001/SPD/2026',
@@ -78,54 +117,35 @@ HTML;
 
         LetterRequest::create([
             'user_id' => 3,
-            'template_id' => $template->id,
+            'template_id' => $templateDispen->id,
             'status' => 'approved_admin',
-            'payload_data' => array_merge($payloadBase, [
-                'nomor_surat' => '421/002/SPD/2026',
-                'tujuan' => 'UPT Perpustakaan Daerah Surakarta',
-                'keperluan' => 'Studi Banding Pengelolaan Perpustakaan Sekolah',
-                'tanggal_berangkat' => '15 Januari 2026',
-                'tanggal_kembali' => '16 Januari 2026',
-            ]),
-        ]);
-
-        LetterRequest::create([
-            'user_id' => 3,
-            'template_id' => $template->id,
-            'status' => 'pending',
-            'payload_data' => array_merge($payloadBase, [
-                'nomor_surat' => '421/003/SPD/2026',
-                'tujuan' => 'Balai Diklat Surakarta',
-                'keperluan' => 'Pelatihan Media Pembelajaran Digital',
-                'tanggal_berangkat' => '5 Februari 2026',
-                'tanggal_kembali' => '7 Februari 2026',
-            ]),
-        ]);
-
-        LetterRequest::create([
-            'user_id' => 3,
-            'template_id' => $template->id,
-            'status' => 'rejected',
-            'payload_data' => array_merge($payloadBase, [
-                'nomor_surat' => '421/004/SPD/2026',
-                'tujuan' => 'Museum Radyapustaka',
-                'keperluan' => 'Kunjungan Edukasi Siswa',
-                'tanggal_berangkat' => '20 Januari 2026',
-                'tanggal_kembali' => '20 Januari 2026',
-            ]),
-        ]);
-
-        LetterRequest::create([
-            'user_id' => 3,
-            'template_id' => $template->id,
-            'status' => 'pending',
-            'payload_data' => array_merge($payloadBase, [
-                'nomor_surat' => '421/005/SPD/2026',
-                'tujuan' => 'Kantor Kementerian Agama Surakarta',
-                'keperluan' => 'Koordinasi Kegiatan Keagamaan Sekolah',
-                'tanggal_berangkat' => '12 Maret 2026',
-                'tanggal_kembali' => '12 Maret 2026',
-            ]),
+            'payload_data' => [
+                'nomor_surat' => '421/002/DISPEN/2026',
+                'nama_kegiatan' => 'Olimpiade Sains Nasional (OSN) Tingkat Kota',
+                'tujuan' => 'SMA Negeri 1 Surakarta',
+                'tanggal_berangkat' => '15 Maret 2026',
+                'tanggal_kembali' => '16 Maret 2026',
+                'daftar_peserta' => [
+                    [
+                        'nama' => 'Ahmad Rizky Pratama',
+                        'identitas' => '0051234501',
+                        'kelas_jabatan' => 'X RPL 1',
+                        'peran' => 'Peserta Bidang Informatika',
+                    ],
+                    [
+                        'nama' => 'Anisa Rahmawati',
+                        'identitas' => '0051234502',
+                        'kelas_jabatan' => 'X RPL 1',
+                        'peran' => 'Peserta Bidang Matematika',
+                    ],
+                    [
+                        'nama' => 'Bagus Kurniawan',
+                        'identitas' => '0049876503',
+                        'kelas_jabatan' => 'XI TKJ 2',
+                        'peran' => 'Peserta Bidang Fisika',
+                    ],
+                ],
+            ],
         ]);
     }
 }

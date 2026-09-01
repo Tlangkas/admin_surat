@@ -9,10 +9,14 @@ use App\Actions\Letter\GeneratePdfAndQrAction;
 use App\Filament\Resources\LetterRequestResource\Pages;
 use App\Models\LetterRequest;
 use App\Models\LetterTemplate;
+use App\Models\Siswa;
 use App\Policies\LetterRequestPolicy;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Filament\Forms;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Group;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -177,7 +181,92 @@ class LetterRequestResource extends Resource
                                 default => Str::headline($rawLabel),
                             };
 
-                            if (str_contains($lowerKey, 'keperluan') || str_contains($lowerKey, 'maksud') || str_contains($lowerKey, 'keterangan')) {
+                            if ($lowerKey === 'daftar_peserta' || $lowerKey === 'peserta') {
+                                $field = Repeater::make("payload_data.{$cleanKey}")
+                                    ->label('Daftar Peserta / Siswa')
+                                    ->schema([
+                                        Select::make('siswa_id')
+                                            ->label('Pilih dari Data Siswa (Opsional / Otomatisasi)')
+                                            ->options(fn () => Siswa::query()->orderBy('nama')->get()->mapWithKeys(fn ($s) => [$s->id => "{$s->nama} ({$s->nisn} - {$s->kelas})"]))
+                                            ->searchable()
+                                            ->live()
+                                            ->afterStateUpdated(function ($state, Forms\Set $set): void {
+                                                if (! $state) {
+                                                    return;
+                                                }
+                                                $siswa = Siswa::find($state);
+                                                if ($siswa) {
+                                                    $set('nama', $siswa->nama);
+                                                    $set('identitas', $siswa->nisn);
+                                                    $set('kelas_jabatan', "{$siswa->kelas} ({$siswa->jurusan})");
+                                                }
+                                            })
+                                            ->columnSpan(['default' => 1, 'md' => 2]),
+
+                                        TextInput::make('nama')
+                                            ->label('Nama Peserta')
+                                            ->required(),
+
+                                        TextInput::make('identitas')
+                                            ->label('NISN / NIP')
+                                            ->placeholder('Contoh: 0051234567 atau 1985...'),
+
+                                        TextInput::make('kelas_jabatan')
+                                            ->label('Kelas / Jabatan')
+                                            ->placeholder('Contoh: XII RPL 1 atau Guru Pendamping'),
+
+                                        TextInput::make('peran')
+                                            ->label('Peran / Keterangan')
+                                            ->placeholder('Contoh: Ketua Tim, Peserta Lomba, dll.')
+                                            ->default('Peserta'),
+                                    ])
+                                    ->columns(['default' => 1, 'md' => 2])
+                                    ->defaultItems(1)
+                                    ->addActionLabel('+ Tambah Peserta')
+                                    ->columnSpanFull();
+                            } elseif (str_contains($lowerKey, 'waktu') || str_contains($lowerKey, 'jam') || str_contains($lowerKey, 'time')) {
+                                $field = DateTimePicker::make("payload_data.{$cleanKey}")
+                                    ->label($cleanLabel)
+                                    ->displayFormat('d F Y H:i')
+                                    ->formatStateUsing(function ($state) {
+                                        if (empty($state)) {
+                                            return null;
+                                        }
+                                        $parsed = self::parseIndonesianDate((string) $state);
+
+                                        return $parsed ? $parsed->format('Y-m-d H:i:s') : $state;
+                                    })
+                                    ->dehydrateStateUsing(function ($state) {
+                                        if (empty($state)) {
+                                            return $state;
+                                        }
+                                        $parsed = self::parseIndonesianDate((string) $state);
+
+                                        return $parsed ? $parsed->translatedFormat('j F Y H:i') . ' WIB' : $state;
+                                    })
+                                    ->required();
+                            } elseif (str_contains($lowerKey, 'tanggal') || str_contains($lowerKey, 'tgl') || str_contains($lowerKey, 'date') || str_contains($lowerKey, 'lahir') || str_contains($lowerKey, 'berangkat') || str_contains($lowerKey, 'kembali') || str_contains($lowerKey, 'pelaksanaan') || str_contains($lowerKey, 'mulai') || str_contains($lowerKey, 'selesai') || str_contains($lowerKey, 'berlaku')) {
+                                $field = DatePicker::make("payload_data.{$cleanKey}")
+                                    ->label($cleanLabel)
+                                    ->displayFormat('d F Y')
+                                    ->formatStateUsing(function ($state) {
+                                        if (empty($state)) {
+                                            return null;
+                                        }
+                                        $parsed = self::parseIndonesianDate((string) $state);
+
+                                        return $parsed ? $parsed->format('Y-m-d') : $state;
+                                    })
+                                    ->dehydrateStateUsing(function ($state) {
+                                        if (empty($state)) {
+                                            return $state;
+                                        }
+                                        $parsed = self::parseIndonesianDate((string) $state);
+
+                                        return $parsed ? $parsed->translatedFormat('j F Y') : $state;
+                                    })
+                                    ->required();
+                            } elseif (str_contains($lowerKey, 'keperluan') || str_contains($lowerKey, 'maksud') || str_contains($lowerKey, 'keterangan')) {
                                 $field = Textarea::make("payload_data.{$cleanKey}")
                                     ->label($cleanLabel)
                                     ->rows(3)
@@ -401,6 +490,46 @@ class LetterRequestResource extends Resource
             }
         } catch (\Throwable $e) {
             // Abaikan: cleanup preview tidak boleh mengganggu alur utama.
+        }
+    }
+
+    /** Mengonversi teks tanggal/waktu bahasa Indonesia menjadi instans Carbon untuk di-load ke form picker. */
+    public static function parseIndonesianDate(?string $dateStr): ?\Carbon\Carbon
+    {
+        if (empty($dateStr)) {
+            return null;
+        }
+
+        $months = [
+            'januari' => 'january',
+            'februari' => 'february',
+            'maret' => 'march',
+            'april' => 'april',
+            'mei' => 'may',
+            'juni' => 'june',
+            'juli' => 'july',
+            'agustus' => 'august',
+            'september' => 'september',
+            'oktober' => 'october',
+            'november' => 'november',
+            'desember' => 'december',
+        ];
+
+        $lower = strtolower($dateStr);
+        
+        foreach ($months as $indo => $eng) {
+            if (str_contains($lower, $indo)) {
+                $lower = str_replace($indo, $eng, $lower);
+                break;
+            }
+        }
+
+        $lower = trim(str_replace('wib', '', $lower));
+
+        try {
+            return \Carbon\Carbon::parse($lower);
+        } catch (\Throwable $e) {
+            return null;
         }
     }
 

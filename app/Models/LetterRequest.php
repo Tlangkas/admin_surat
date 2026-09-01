@@ -89,7 +89,7 @@ class LetterRequest extends Model
 
     /**
      * Render HTML template dengan menyaring tag outer HTML, Kop ganda, TTD ganda,
-     * serta mengganti placeholder variabel (seperti {{ $nama }}, {{nama}})
+     * serta mengganti placeholder variabel (seperti {{ $nama }}, {{nama}}, {{daftar_peserta}})
      * dengan data dari payload_data.
      */
     public function renderContent(): string
@@ -122,16 +122,62 @@ class LetterRequest extends Model
         $content = preg_replace('/<body.*?>/i', '', $content);
         $content = preg_replace('/<\/body>/i', '', $content);
 
-        // Ganti placeholder variabel dengan multiline string formatting yang aman (nl2br(e(...)))
+        // Ganti placeholder variabel dengan multiline string formatting yang aman atau tabel peserta
         $rendered = preg_replace_callback('/\{\{\s*\$?\s*([a-zA-Z0-9_]+)\s*\}\}/', function ($matches) use ($payload) {
             $key = $matches[1];
-            if (array_key_exists($key, $payload) && $payload[$key] !== null) {
-                $val = e((string) $payload[$key]);
 
-                return nl2br($val);
+            if (! array_key_exists($key, $payload) || $payload[$key] === null) {
+                return '';
             }
 
-            return '';
+            // Render khusus untuk multi-peserta (daftar_peserta atau peserta)
+            if (($key === 'daftar_peserta' || $key === 'peserta') && (is_array($payload[$key]) || is_string($payload[$key]))) {
+                $pesertaList = is_array($payload[$key]) ? $payload[$key] : json_decode((string) $payload[$key], true);
+                if (is_array($pesertaList) && ! empty($pesertaList)) {
+                    $tableHtml = [];
+                    $tableHtml[] = '<table class="table-data" style="width: 100%; border-collapse: collapse; margin: 12px 0 16px 0; font-size: 10.5pt;">';
+                    $tableHtml[] = '  <thead>';
+                    $tableHtml[] = '    <tr style="background-color: #f1f5f9; text-align: left;">';
+                    $tableHtml[] = '      <th style="border: 1px solid #94a3b8; padding: 6px 8px; width: 35px; text-align: center;">No</th>';
+                    $tableHtml[] = '      <th style="border: 1px solid #94a3b8; padding: 6px 8px;">Nama Peserta</th>';
+                    $tableHtml[] = '      <th style="border: 1px solid #94a3b8; padding: 6px 8px; width: 125px;">NISN / NIP</th>';
+                    $tableHtml[] = '      <th style="border: 1px solid #94a3b8; padding: 6px 8px; width: 120px;">Kelas / Jabatan</th>';
+                    $tableHtml[] = '      <th style="border: 1px solid #94a3b8; padding: 6px 8px; width: 130px;">Peran / Keterangan</th>';
+                    $tableHtml[] = '    </tr>';
+                    $tableHtml[] = '  </thead>';
+                    $tableHtml[] = '  <tbody>';
+                    $no = 1;
+                    foreach ($pesertaList as $item) {
+                        if (! is_array($item)) {
+                            continue;
+                        }
+                        $nama = e((string) ($item['nama'] ?? ''));
+                        $identitas = e((string) ($item['identitas'] ?? $item['nisn'] ?? $item['nip'] ?? '-'));
+                        $kelasJabatan = e((string) ($item['kelas_jabatan'] ?? $item['kelas'] ?? $item['jabatan'] ?? '-'));
+                        $peran = e((string) ($item['peran'] ?? $item['keterangan'] ?? '-'));
+
+                        $tableHtml[] = '    <tr>';
+                        $tableHtml[] = '      <td style="border: 1px solid #cbd5e1; padding: 5px 8px; text-align: center;">' . $no++ . '</td>';
+                        $tableHtml[] = '      <td style="border: 1px solid #cbd5e1; padding: 5px 8px; font-weight: bold;">' . $nama . '</td>';
+                        $tableHtml[] = '      <td style="border: 1px solid #cbd5e1; padding: 5px 8px; font-family: monospace;">' . $identitas . '</td>';
+                        $tableHtml[] = '      <td style="border: 1px solid #cbd5e1; padding: 5px 8px;">' . $kelasJabatan . '</td>';
+                        $tableHtml[] = '      <td style="border: 1px solid #cbd5e1; padding: 5px 8px;">' . $peran . '</td>';
+                        $tableHtml[] = '    </tr>';
+                    }
+                    $tableHtml[] = '  </tbody>';
+                    $tableHtml[] = '</table>';
+
+                    return implode("\n", $tableHtml);
+                }
+            }
+
+            if (is_array($payload[$key])) {
+                return '';
+            }
+
+            $val = e((string) $payload[$key]);
+
+            return nl2br($val);
         }, trim($content));
 
         // Format tabel agar memiliki class table-data resmi

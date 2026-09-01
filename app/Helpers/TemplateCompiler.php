@@ -29,6 +29,11 @@ class TemplateCompiler
 
         $identityFields = (array) ($builderData['identity_fields'] ?? ['nama', 'nip', 'jabatan']);
         $detailFields = (array) ($builderData['detail_fields'] ?? ['keperluan', 'tujuan']);
+        $includeParticipants = ! empty($builderData['include_participants']) || in_array('daftar_peserta', $identityFields, true) || in_array('daftar_peserta', $detailFields, true);
+
+        // Filter out daftar_peserta from normal single-value key-value tables
+        $identityFields = array_values(array_filter($identityFields, fn ($f) => $f !== 'daftar_peserta'));
+        $detailFields = array_values(array_filter($detailFields, fn ($f) => $f !== 'daftar_peserta'));
 
         $allVars = [];
 
@@ -55,6 +60,9 @@ class TemplateCompiler
                 $label = match (strtolower($cleanKey)) {
                     'nama' => 'Nama',
                     'nip' => 'NIP',
+                    'nisn' => 'NISN',
+                    'kelas' => 'Kelas',
+                    'jurusan' => 'Jurusan / Kompetensi',
                     'jabatan' => 'Jabatan',
                     'sekolah', 'nama_sekolah' => 'Unit Kerja / Sekolah',
                     default => Str::headline($cleanKey),
@@ -69,6 +77,11 @@ class TemplateCompiler
                 $allVars[] = $cleanKey;
             }
             $html[] = '</table>';
+        }
+
+        if ($includeParticipants) {
+            $html[] = '{{ daftar_peserta }}';
+            $allVars[] = 'daftar_peserta';
         }
 
         if (! empty($middle)) {
@@ -86,6 +99,9 @@ class TemplateCompiler
                 $label = match (strtolower($cleanKey)) {
                     'tujuan' => 'Tujuan',
                     'keperluan', 'maksud' => 'Maksud / Keperluan',
+                    'nama_kegiatan', 'kegiatan' => 'Nama Kegiatan / Lomba',
+                    'tempat_kegiatan', 'lokasi' => 'Tempat Pelaksanaan',
+                    'tanggal_pelaksanaan', 'waktu' => 'Waktu Pelaksanaan',
                     'tanggal_berangkat', 'tgl_berangkat' => 'Tanggal Berangkat',
                     'tanggal_kembali', 'tgl_kembali' => 'Tanggal Kembali',
                     'keterangan' => 'Keterangan',

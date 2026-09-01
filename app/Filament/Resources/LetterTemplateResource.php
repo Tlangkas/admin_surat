@@ -69,6 +69,24 @@ class LetterTemplateResource extends Resource
                                     $set('middle_text', 'Diberikan tugas untuk melaksanakan perjalanan dinas dengan rincian sebagai berikut:');
                                     $set('detail_fields', ['tujuan', 'keperluan', 'tanggal_berangkat', 'tanggal_kembali']);
                                     $set('closing_text', 'Demikian Surat Tugas ini dibuat untuk dipergunakan sebagaimana mestinya dan dilaksanakan dengan penuh tanggung jawab.');
+                                } elseif ($state === 'surat_dispensasi_siswa') {
+                                    $set('name', 'Surat Dispensasi Siswa');
+                                    $set('letter_code', 'DISPEN');
+                                    $set('title_text', 'SURAT DISPENSASI SISWA');
+                                    $set('opening_text', 'Yang bertanda tangan di bawah ini Kepala Sekolah memberikan dispensasi / izin meninggalkan Kegiatan Belajar Mengajar (KBM) kepada:');
+                                    $set('identity_fields', ['nama', 'nip', 'jabatan']);
+                                    $set('middle_text', 'Untuk mengikuti kegiatan / perlombaan dengan rincian:');
+                                    $set('detail_fields', ['nama_kegiatan', 'tujuan', 'tanggal_berangkat', 'tanggal_kembali', 'daftar_peserta']);
+                                    $set('closing_text', 'Demikian Surat Dispensasi ini diberikan agar yang bersangkutan dapat melaksanakan tugas dengan sebaik-baiknya.');
+                                } elseif ($state === 'surat_tugas_siswa') {
+                                    $set('name', 'Surat Tugas / Rekomendasi Siswa');
+                                    $set('letter_code', 'ST-SISWA');
+                                    $set('title_text', 'SURAT TUGAS KONTINGEN SISWA');
+                                    $set('opening_text', 'Yang bertanda tangan di bawah ini Kepala Sekolah menugaskan Guru Pembimbing dan Kontingen Siswa berikut:');
+                                    $set('identity_fields', ['nama', 'nip', 'jabatan']);
+                                    $set('middle_text', 'Untuk mewakili sekolah dalam agenda kegiatan / kejuaraan:');
+                                    $set('detail_fields', ['nama_kegiatan', 'tujuan', 'tanggal_berangkat', 'tanggal_kembali', 'daftar_peserta']);
+                                    $set('closing_text', 'Demikian Surat Tugas ini diterbitkan untuk dipergunakan sebagaimana mestinya.');
                                 } elseif ($state === 'surat_keterangan') {
                                     $set('name', 'Surat Keterangan Aktif');
                                     $set('letter_code', 'SK');
@@ -101,21 +119,21 @@ class LetterTemplateResource extends Resource
                     ->schema([
                         Forms\Components\TextInput::make('name')
                             ->label('Nama Template Surat')
-                            ->placeholder('Contoh: Surat Tugas Perjalanan Dinas')
+                            ->placeholder('Contoh: Surat Dispensasi Siswa')
                             ->required()
                             ->maxLength(255),
 
                         Forms\Components\TextInput::make('title_text')
                             ->label('Judul Resmi di Cetakan Surat')
-                            ->placeholder('Contoh: SURAT TUGAS')
+                            ->placeholder('Contoh: SURAT DISPENSASI SISWA')
                             ->default('SURAT TUGAS')
                             ->required()
                             ->maxLength(255),
 
                         Forms\Components\TextInput::make('letter_code')
                             ->label('Kode Surat')
-                            ->placeholder('Contoh: SPD, SK, SI')
-                            ->helperText('Kode jenis surat untuk nomor surat otomatis, mis. 421/001/SPD/2026')
+                            ->placeholder('Contoh: SPD, DISPEN, SK, SI')
+                            ->helperText('Kode jenis surat untuk nomor surat otomatis, mis. 421/001/DISPEN/2026')
                             ->maxLength(20)
                             ->dehydrated(),
 
@@ -142,12 +160,15 @@ class LetterTemplateResource extends Resource
                             ->required(),
 
                         Forms\Components\CheckboxList::make('identity_fields')
-                            ->label('2. Pilih Identitas Pengaju yang Ditampilkan di Surat')
+                            ->label('2. Pilih Identitas Pengaju / Pembimbing yang Ditampilkan')
                             ->options([
-                                'nama' => 'Nama Lengkap Pengaju',
+                                'nama' => 'Nama Lengkap Pengaju / Pembimbing',
                                 'nip' => 'NIP (Nomor Induk Pegawai)',
                                 'jabatan' => 'Jabatan / Unit Kerja',
                                 'sekolah' => 'Nama Sekolah / Institusi',
+                                'nisn' => 'NISN Siswa (Jika surat perorangan siswa)',
+                                'kelas' => 'Kelas Siswa',
+                                'jurusan' => 'Jurusan Siswa',
                             ])
                             ->default(['nama', 'nip', 'jabatan'])
                             ->columns(2)
@@ -155,14 +176,16 @@ class LetterTemplateResource extends Resource
 
                         Forms\Components\Textarea::make('middle_text')
                             ->label('3. Paragraf Penjelas / Antara (Opsional)')
-                            ->placeholder('Contoh: Diberikan tugas untuk melaksanakan perjalanan dinas dengan rincian:')
+                            ->placeholder('Contoh: Diberikan tugas untuk melaksanakan kegiatan dengan rincian:')
                             ->default('Diberikan tugas untuk melaksanakan kegiatan dengan rincian sebagai berikut:')
                             ->rows(2),
 
                         Forms\Components\CheckboxList::make('detail_fields')
-                            ->label('4. Pilih Rincian Keperluan / Kegiatan yang Ditampilkan di Surat')
+                            ->label('4. Pilih Rincian Keperluan / Tabel Peserta yang Ditampilkan di Surat')
                             ->options([
-                                'tujuan' => 'Tujuan Dinas / Tempat',
+                                'daftar_peserta' => '📋 Tabel Daftar Peserta (Multi-Peserta / Siswa)',
+                                'nama_kegiatan' => 'Nama Agenda / Kegiatan / Lomba',
+                                'tujuan' => 'Tujuan Dinas / Tempat Pelaksanaan',
                                 'keperluan' => 'Maksud / Keperluan',
                                 'tanggal_berangkat' => 'Tanggal Berangkat',
                                 'tanggal_kembali' => 'Tanggal Kembali',
