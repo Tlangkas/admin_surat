@@ -32,7 +32,7 @@ class UserResource extends Resource
 
     protected static ?string $slug = 'pengguna';
 
-    protected static ?string $navigationGroup = 'Pengaturan';
+    protected static ?string $navigationGroup = 'Pengaturan & Audit';
 
     protected static ?int $navigationSort = 2;
 
@@ -154,7 +154,10 @@ class UserResource extends Resource
                         ->visible(fn (): bool => auth()->user()?->isAdmin()),
                 ]),
             ])
-            ->defaultSort('name', 'asc');
+            ->defaultSort('name', 'asc')
+            ->emptyStateHeading('Belum Ada Pengguna')
+            ->emptyStateDescription('Tambahkan akun pengguna baru dengan mengklik tombol di atas.')
+            ->emptyStateIcon('heroicon-o-user-group');
     }
 
     public static function getPages(): array

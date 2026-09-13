@@ -73,6 +73,12 @@ class LetterRequest extends Model
         return $this->status === 'signed';
     }
 
+    /** Ambil nomor surat dari payload_data jika ada. */
+    public function getNomorSuratAttribute(): ?string
+    {
+        return $this->payload_data['nomor_surat'] ?? null;
+    }
+
     public function isRejected(): bool
     {
         return $this->status === 'rejected';
@@ -83,8 +89,9 @@ class LetterRequest extends Model
     {
         $uuid = $this->uuid;
         $signature = hash_hmac('sha256', $uuid, config('app.key'));
+        $baseUrl = SchoolSettings::getInstance()->getVerificationBaseUrl();
 
-        return route('letter.verify', ['uuid' => $uuid, 'sig' => $signature]);
+        return $baseUrl . '/letter/verify/' . $uuid . '?sig=' . $signature;
     }
 
     /**

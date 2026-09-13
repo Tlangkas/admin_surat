@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Auth;
 
 class LetterStatsWidget extends BaseWidget
 {
-    protected static ?string $pollingInterval = '5s';
+    protected static ?string $pollingInterval = null;
 
     protected function getStats(): array
     {
@@ -22,11 +22,21 @@ class LetterStatsWidget extends BaseWidget
             $query->where('user_id', $user->id);
         }
 
-        $total = (clone $query)->count();
-        $pending = (clone $query)->where('status', 'pending')->count();
-        $approved = (clone $query)->where('status', 'approved_admin')->count();
-        $signed = (clone $query)->where('status', 'signed')->count();
-        $rejected = (clone $query)->where('status', 'rejected')->count();
+        $stats = (clone $query)
+            ->selectRaw("
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN status = 'approved_admin' THEN 1 ELSE 0 END) as approved,
+                SUM(CASE WHEN status = 'signed' THEN 1 ELSE 0 END) as signed,
+                SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected
+            ")
+            ->first();
+
+        $total = (int) ($stats?->total ?? 0);
+        $pending = (int) ($stats?->pending ?? 0);
+        $approved = (int) ($stats?->approved ?? 0);
+        $signed = (int) ($stats?->signed ?? 0);
+        $rejected = (int) ($stats?->rejected ?? 0);
 
         return [
             Stat::make('Total Surat', $total)

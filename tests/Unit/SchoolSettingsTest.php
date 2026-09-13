@@ -29,14 +29,48 @@ class SchoolSettingsTest extends TestCase
     public function test_get_instance_creates_one_record_with_defaults_when_table_is_empty(): void
     {
         SchoolSettings::query()->delete();
+        SchoolSettings::clearInstanceCache();
 
         $instance = SchoolSettings::getInstance();
 
         $this->assertInstanceOf(SchoolSettings::class, $instance);
         $this->assertDatabaseCount('school_settings', 1);
         $this->assertSame('NAMA SEKOLAH', $instance->nama_sekolah);
-        $this->assertSame('421', $instance->kode_sekolah);
+        $this->assertSame('29.15', $instance->kode_sekolah);
+        $this->assertSame(1, $instance->starting_letter_number);
         $this->assertSame('PEMERINTAH KOTA SURAKARTA', $instance->kop_line_1);
+        $this->assertSame(75, $instance->logo_width);
+        $this->assertSame(0, $instance->logo_offset_x);
+        $this->assertSame(0, $instance->logo_offset_y);
+        $this->assertSame('middle', $instance->logo_valign);
+        $this->assertSame(10, $instance->kop_gap);
+    }
+
+    public function test_logo_customization_fields_stored_and_retrieved(): void
+    {
+        $settings = SchoolSettings::getInstance();
+        $settings->update([
+            'logo_width' => 95,
+            'logo_offset_x' => 12,
+            'logo_offset_y' => -5,
+            'logo_valign' => 'top',
+            'logo_kanan_width' => 85,
+            'logo_kanan_offset_x' => -8,
+            'logo_kanan_offset_y' => 4,
+            'logo_kanan_valign' => 'bottom',
+            'kop_gap' => 20,
+        ]);
+
+        $refreshed = SchoolSettings::getInstance();
+        $this->assertSame(95, $refreshed->logo_width);
+        $this->assertSame(12, $refreshed->logo_offset_x);
+        $this->assertSame(-5, $refreshed->logo_offset_y);
+        $this->assertSame('top', $refreshed->logo_valign);
+        $this->assertSame(85, $refreshed->logo_kanan_width);
+        $this->assertSame(-8, $refreshed->logo_kanan_offset_x);
+        $this->assertSame(4, $refreshed->logo_kanan_offset_y);
+        $this->assertSame('bottom', $refreshed->logo_kanan_valign);
+        $this->assertSame(20, $refreshed->kop_gap);
     }
 
     public function test_logo_url_attribute_returns_null_when_empty(): void
@@ -64,6 +98,19 @@ class SchoolSettingsTest extends TestCase
 
         $this->assertNotNull($settings->getLogoBase64());
         $this->assertStringStartsWith('data:image/png;base64,', $settings->getLogoBase64());
+    }
+
+    public function test_logo_kanan_base64_returns_data_uri_when_file_exists(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('logos/logo_kanan.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='));
+
+        $settings = SchoolSettings::getInstance();
+        $settings->update(['logo_kanan_path' => 'logos/logo_kanan.png']);
+
+        $this->assertNotNull($settings->getLogoKananBase64());
+        $this->assertStringStartsWith('data:image/png;base64,', $settings->getLogoKananBase64());
+        $this->assertStringContainsString('storage/logos/logo_kanan.png', $settings->logo_kanan_url);
     }
 
     public function test_ttd_kepsek_url_attribute(): void
@@ -125,5 +172,39 @@ class SchoolSettingsTest extends TestCase
         $settings->update(['telepon' => '', 'email' => '', 'website' => '']);
 
         $this->assertSame('', $settings->kontak_lengkap);
+    }
+
+    public function test_akreditasi_field_stored_and_retrieved(): void
+    {
+        $settings = SchoolSettings::getInstance();
+        $settings->update(['akreditasi' => 'Terakreditasi "A"']);
+
+        $this->assertSame('Terakreditasi "A"', $settings->fresh()->akreditasi);
+    }
+
+    public function test_formatted_akreditasi_handles_raw_grade_and_full_text(): void
+    {
+        $settings = SchoolSettings::getInstance();
+
+        // 1. Single grade letter automatically prefixed
+        $settings->akreditasi = 'A';
+        $this->assertSame('Akreditasi: A', $settings->formatted_akreditasi);
+
+        $settings->akreditasi = 'B (Baik)';
+        $this->assertSame('Akreditasi: B (Baik)', $settings->formatted_akreditasi);
+
+        // 2. Full text with 'akreditasi' or 'terakreditasi' kept as is
+        $settings->akreditasi = 'Terakreditasi "A"';
+        $this->assertSame('Terakreditasi "A"', $settings->formatted_akreditasi);
+
+        $settings->akreditasi = 'Akreditasi Unggul';
+        $this->assertSame('Akreditasi Unggul', $settings->formatted_akreditasi);
+
+        // 3. Null or empty string returns null
+        $settings->akreditasi = null;
+        $this->assertNull($settings->formatted_akreditasi);
+
+        $settings->akreditasi = '   ';
+        $this->assertNull($settings->formatted_akreditasi);
     }
 }

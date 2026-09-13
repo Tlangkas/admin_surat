@@ -15,7 +15,7 @@ use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
-use Illuminate\Session\Middleware\AuthenticateSession;
+use Filament\Http\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
@@ -41,9 +41,17 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Emerald,
                 'gray' => Color::Slate,
             ])
-            ->font('Inter')
+            ->font('Inter', provider: \Filament\FontProviders\LocalFontProvider::class)
             ->sidebarCollapsibleOnDesktop()
             ->maxContentWidth('7xl')
+            ->navigationGroups([
+                \Filament\Navigation\NavigationGroup::make()
+                    ->label('Layanan Surat'),
+                \Filament\Navigation\NavigationGroup::make()
+                    ->label('Master Data'),
+                \Filament\Navigation\NavigationGroup::make()
+                    ->label('Pengaturan & Audit'),
+            ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
@@ -67,6 +75,10 @@ class AdminPanelProvider extends PanelProvider
                 \Filament\View\PanelsRenderHook::HEAD_END,
                 fn (): \Illuminate\Support\HtmlString => new \Illuminate\Support\HtmlString('
                     <style>
+                        /* Fast native font stack (instant render without external CDN latency) */
+                        body, .fi-body {
+                            font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+                        }
                         /* Custom Table, Badges & Buttons UI Polish */
                         .fi-ta-table { font-size: 0.925rem; }
                         .fi-ta-cell { padding-top: 0.875rem !important; padding-bottom: 0.875rem !important; }

@@ -81,6 +81,49 @@ class EditLetterTemplate extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('import_docx')
+                ->label('Perbarui dari Word (.docx)')
+                ->icon('heroicon-o-arrow-up-tray')
+                ->color('info')
+                ->modalHeading('Perbarui Template dari Dokumen Word (.docx)')
+                ->modalDescription('Unggah dokumen .docx baru untuk memperbarui isian formulir template ini.')
+                ->form([
+                    \Filament\Forms\Components\FileUpload::make('file')
+                        ->label('Pilih Berkas Word (.docx)')
+                        ->acceptedFileTypes(['application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
+                        ->disk('local')
+                        ->directory('temp-uploads')
+                        ->required(),
+                ])
+                ->action(function (array $data): void {
+                    $file = is_array($data['file']) ? (reset($data['file']) ?: '') : $data['file'];
+                    if ($file instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile || $file instanceof \Illuminate\Http\UploadedFile) {
+                        $fullPath = $file->getRealPath();
+                    } else {
+                        $fullPath = \Illuminate\Support\Facades\Storage::disk('local')->path((string) $file);
+                    }
+
+                    try {
+                        $parser = new \App\Services\DocxTemplateParser();
+                        $parsed = $parser->parse($fullPath);
+                        $this->form->fill($parsed);
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Dokumen Berhasil Diekstrak')
+                            ->body('Formulir telah diperbarui dengan data dari berkas Word.')
+                            ->success()
+                            ->send();
+                    } catch (\Throwable $e) {
+                        \Filament\Notifications\Notification::make()
+                            ->title('Gagal Mengekstrak Dokumen')
+                            ->body($e->getMessage())
+                            ->danger()
+                            ->send();
+                    } finally {
+                        @unlink($fullPath);
+                    }
+                }),
+
             Actions\DeleteAction::make(),
         ];
     }

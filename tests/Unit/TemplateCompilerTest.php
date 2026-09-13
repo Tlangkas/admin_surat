@@ -44,10 +44,10 @@ class TemplateCompilerTest extends TestCase
         $this->assertStringContainsString('Nama', $content);
         $this->assertStringContainsString('NIP', $content);
         $this->assertStringContainsString('Jabatan', $content);
-        $this->assertStringContainsString('Unit Kerja / Sekolah', $content);
+        $this->assertStringContainsString('Unit Kerja', $content);
 
         $this->assertStringContainsString('Tujuan', $content);
-        $this->assertStringContainsString('Maksud / Keperluan', $content);
+        $this->assertStringContainsString('Keperluan', $content);
         $this->assertStringContainsString('Tanggal Berangkat', $content);
         $this->assertStringContainsString('Tanggal Kembali', $content);
         $this->assertStringContainsString('Keterangan', $content);

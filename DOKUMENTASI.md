@@ -60,6 +60,57 @@
 - Logika bisnis WAJIB dipisahkan ke dalam `app/Actions/` (Action Pattern).
 - Kode WAJIB menggunakan PHP 8.3 Strict Typing (`declare(strict_types=1)` dan return types eksplisit).
 
+### 1.4 Peta Struktur Proyek: Pemisahan Frontend & Backend
+
+Aplikasi menerapkan pemisahan tanggung jawab (*Separation of Concerns*) yang tegas:
+
+#### 🎨 Komponen Frontend (Presentasi, Antarmuka Pengguna & Asset)
+Komponen yang bertugas menampilkan data ke pengguna, menyusun formulir, tabel, interaksi Alpine.js, dan styling dokumen:
+- **Filament Resources (UI Admin Panel)**:
+  - [`LetterRequestResource.php`](file:///d:/e%20surat/app/Filament/Resources/LetterRequestResource.php) — UI Formulir Pengajuan Surat dinamis & Tabel pengajuan.
+  - [`LetterTemplateResource.php`](file:///d:/e%20surat/app/Filament/Resources/LetterTemplateResource.php) — UI Visual Template Builder (tanpa HTML) & Tabel template.
+  - [`KaryawanResource.php`](file:///d:/e%20surat/app/Filament/Resources/KaryawanResource.php) — UI Tabel Guru/Karyawan, Modal Import Excel, Form data pegawai.
+  - [`SiswaResource.php`](file:///d:/e%20surat/app/Filament/Resources/SiswaResource.php) — UI Tabel Siswa, Modal Import Excel, Form data siswa.
+  - [`UserResource.php`](file:///d:/e%20surat/app/Filament/Resources/UserResource.php) — UI Manajemen Pengguna & Hak akses login.
+  - [`LetterStatusLogResource.php`](file:///d:/e%20surat/app/Filament/Resources/LetterStatusLogResource.php) — UI Tabel Audit Trail Log status surat.
+  - Halaman Sub-Resource di `app/Filament/Resources/*/Pages/` (`Create*.php`, `Edit*.php`, `List*.php`).
+- **Filament Pages & Widgets**:
+  - [`SchoolSettingsPage.php`](file:///d:/e%20surat/app/Filament/Pages/SchoolSettingsPage.php) — Formulir visual konfigurasi sekolah, studio logo, & Kop Surat.
+  - [`RegisterGukar.php`](file:///d:/e%20surat/app/Filament/Pages/Auth/RegisterGukar.php) — UI Registrasi Mandiri Akun Pegawai (Multi-step Wizard).
+  - [`LetterStatsWidget.php`](file:///d:/e%20surat/app/Filament/Widgets/LetterStatsWidget.php) — Kartu ringkasan statistik persuratan di Dashboard.
+- **Blade Views & Pratinjau Dokumen**:
+  - [`school-settings.blade.php`](file:///d:/e%20surat/resources/views/filament/pages/school-settings.blade.php) — Komponen Alpine.js interaktif kanvas pratinjau Kop Surat real-time.
+  - [`letter-verify.blade.php`](file:///d:/e%20surat/resources/views/letter-verify.blade.php) — Tampilan halaman publik verifikasi keaslian surat via scan QR Code.
+  - [`letter.blade.php`](file:///d:/e%20surat/resources/views/pdfs/letter.blade.php) — Desain cetak dokumen resmi PDF (Kop, Isi, Stempel, QR Code).
+- **Asset Klien**:
+  - `resources/css/app.css` & `resources/js/app.js` — Styling dan skrip interaksi klien.
+  - `public/css/filament/` & `public/js/filament/` — Bundel asset terdistribusi Filament UI dan Alpine.js.
+
+#### ⚙️ Komponen Backend (Logika Bisnis, Data Access, Otorisasi & Layanan)
+Komponen yang memproses komputasi, penomoran otomatis, pembuatan file PDF/QR, otorisasi, dan basis data:
+- **Actions (Logika Bisnis / Action Pattern)**:
+  - [`AssignNomorSuratAction.php`](file:///d:/e%20surat/app/Actions/Letter/AssignNomorSuratAction.php) — Generator penomoran surat otomatis format SURAT 2025 (`001/29.15/E/IX/2026`).
+  - [`GeneratePdfAndQrAction.php`](file:///d:/e%20surat/app/Actions/Letter/GeneratePdfAndQrAction.php) — Kompilasi PDF resmi via DomPDF dan pembuatan QR Code HMAC SHA256.
+  - [`BroadcastLetterStatusAction.php`](file:///d:/e%20surat/app/Actions/Letter/BroadcastLetterStatusAction.php) — Eksekusi perubahan status surat, pencatatan log audit, dan broadcast Reverb WebSocket.
+- **Layanan & Parser Dokumen**:
+  - [`DocxTemplateParser.php`](file:///d:/e%20surat/app/Services/DocxTemplateParser.php) — Parser ekstraksi berkas Word (.docx) SURAT 2025 menjadi template HTML & variabel.
+- **Kompiler & Preset**:
+  - [`TemplateCompiler.php`](file:///d:/e%20surat/app/Helpers/TemplateCompiler.php) — Engine kompilasi placeholder template menjadi redaksi resmi Indonesia tanpa garis miring.
+  - [`TemplatePresets.php`](file:///d:/e%20surat/app/Helpers/TemplatePresets.php) — Pustaka 11 template bawaan sekolah (Surat Tugas, SK, SPPD, dll).
+- **Policies (Kebijakan Otorisasi)**:
+  - [`LetterRequestPolicy.php`](file:///d:/e%20surat/app/Policies/LetterRequestPolicy.php), [`LetterTemplatePolicy.php`](file:///d:/e%20surat/app/Policies/LetterTemplatePolicy.php), [`KaryawanPolicy.php`](file:///d:/e%20surat/app/Policies/KaryawanPolicy.php), [`SiswaPolicy.php`](file:///d:/e%20surat/app/Policies/SiswaPolicy.php), [`SchoolSettingsPolicy.php`](file:///d:/e%20surat/app/Policies/SchoolSettingsPolicy.php), [`UserPolicy.php`](file:///d:/e%20surat/app/Policies/UserPolicy.php).
+- **Models (Eloquent ORM & Data Layer)**:
+  - [`LetterRequest.php`](file:///d:/e%20surat/app/Models/LetterRequest.php), [`LetterTemplate.php`](file:///d:/e%20surat/app/Models/LetterTemplate.php), [`SchoolSettings.php`](file:///d:/e%20surat/app/Models/SchoolSettings.php), [`Karyawan.php`](file:///d:/e%20surat/app/Models/Karyawan.php), [`Siswa.php`](file:///d:/e%20surat/app/Models/Siswa.php), [`User.php`](file:///d:/e%20surat/app/Models/User.php), [`LetterStatusLog.php`](file:///d:/e%20surat/app/Models/LetterStatusLog.php).
+- **Observers & Events**:
+  - [`LetterRequestObserver.php`](file:///d:/e%20surat/app/Observers/LetterRequestObserver.php), [`LetterStatusUpdated.php`](file:///d:/e%20surat/app/Events/LetterStatusUpdated.php).
+- **Imports & Exports (Excel)**:
+  - `app/Imports/` (`KaryawanImport`, `SiswaImport`), `app/Exports/` (`TemplateKaryawanExport`, `TemplateSiswaExport`).
+- **Database**:
+  - `database/migrations/` (Skema tabel) & `database/seeders/` (Data awal).
+- **Routing & Providers**:
+  - `routes/web.php` (Validasi tanda tangan HMAC QR Code dengan rate limiting) & `routes/channels.php` (Otorisasi WebSocket).
+  - `app/Providers/AuthServiceProvider.php` & `app/Providers/Filament/AdminPanelProvider.php`.
+
 ---
 
 ## 2. STRUKTUR DATABASE

@@ -61,4 +61,26 @@ class LetterVerificationTest extends TestCase
         $response->assertSee('Verifikasi Keaslian Surat Digital');
         $response->assertSee($letterRequest->uuid);
     }
+
+    public function test_verification_page_redirects_authenticated_user_to_signed_url_when_sig_missing(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+        $template = LetterTemplate::create([
+            'name' => 'Template Test',
+            'content' => '<p>Surat Test</p>',
+            'variables' => ['nama'],
+            'is_active' => true,
+        ]);
+
+        $letterRequest = LetterRequest::create([
+            'user_id' => $user->id,
+            'template_id' => $template->id,
+            'status' => 'signed',
+            'payload_data' => ['nama' => 'Test User'],
+        ]);
+
+        $response = $this->actingAs($user)->get('/letter/verify/' . $letterRequest->uuid);
+
+        $response->assertRedirect($letterRequest->verificationUrl());
+    }
 }

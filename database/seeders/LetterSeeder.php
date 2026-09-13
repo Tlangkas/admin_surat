@@ -119,10 +119,12 @@ HTML;
             'jabatan' => 'Guru Kelas',
         ];
 
+        $gukarUser = \App\Models\User::where('email', 'gukar@sekolah.sch.id')->first() ?? \App\Models\User::first();
+
         LetterRequest::firstOrCreate(
             ['payload_data->nomor_surat' => '421/001/SPD/2026'],
             [
-                'user_id' => 3,
+                'user_id' => $gukarUser?->id,
                 'template_id' => $templateSPD->id,
                 'status' => 'signed',
                 'payload_data' => array_merge($payloadBase, [
@@ -138,7 +140,7 @@ HTML;
         LetterRequest::firstOrCreate(
             ['payload_data->nomor_surat' => '421/002/DISPEN/2026'],
             [
-                'user_id' => 3,
+                'user_id' => $gukarUser?->id,
                 'template_id' => $templateDispen->id,
                 'status' => 'approved_admin',
                 'payload_data' => [
@@ -170,5 +172,75 @@ HTML;
                 ],
             ]
         );
+
+        // Seed audit logs untuk surat-surat awal agar riwayat audit tampil lengkap
+        $adminUser = \App\Models\User::where('role', 'admin')->first();
+        $kepsekUser = \App\Models\User::where('role', 'kepsek')->first();
+
+        // 1. Audit trail untuk SPD (status signed: Draft -> Approved Admin -> Signed)
+        if ($lrSPD = LetterRequest::where('payload_data->nomor_surat', '421/001/SPD/2026')->first()) {
+            \App\Models\LetterStatusLog::firstOrCreate([
+                'letter_request_id' => $lrSPD->id,
+                'from_status' => null,
+                'to_status' => 'pending',
+            ], [
+                'user_id' => $gukarUser?->id,
+                'note' => 'Pengajuan surat baru diajukan oleh pemohon',
+                'ip_address' => '127.0.0.1',
+                'user_agent' => 'Mozilla/5.0',
+                'created_at' => now()->subHours(4),
+            ]);
+
+            \App\Models\LetterStatusLog::firstOrCreate([
+                'letter_request_id' => $lrSPD->id,
+                'from_status' => 'pending',
+                'to_status' => 'approved_admin',
+            ], [
+                'user_id' => $adminUser?->id,
+                'note' => 'Disetujui oleh admin (Nomor Surat Terbit)',
+                'ip_address' => '127.0.0.1',
+                'user_agent' => 'Mozilla/5.0',
+                'created_at' => now()->subHours(3),
+            ]);
+
+            \App\Models\LetterStatusLog::firstOrCreate([
+                'letter_request_id' => $lrSPD->id,
+                'from_status' => 'approved_admin',
+                'to_status' => 'signed',
+            ], [
+                'user_id' => $kepsekUser?->id,
+                'note' => 'Ditandatangani oleh Kepala Sekolah',
+                'ip_address' => '127.0.0.1',
+                'user_agent' => 'Mozilla/5.0',
+                'created_at' => now()->subHours(2),
+            ]);
+        }
+
+        // 2. Audit trail untuk DISPEN (status approved_admin: Draft -> Approved Admin)
+        if ($lrDispen = LetterRequest::where('payload_data->nomor_surat', '421/002/DISPEN/2026')->first()) {
+            \App\Models\LetterStatusLog::firstOrCreate([
+                'letter_request_id' => $lrDispen->id,
+                'from_status' => null,
+                'to_status' => 'pending',
+            ], [
+                'user_id' => $gukarUser?->id,
+                'note' => 'Pengajuan surat baru diajukan oleh pemohon',
+                'ip_address' => '127.0.0.1',
+                'user_agent' => 'Mozilla/5.0',
+                'created_at' => now()->subHours(3),
+            ]);
+
+            \App\Models\LetterStatusLog::firstOrCreate([
+                'letter_request_id' => $lrDispen->id,
+                'from_status' => 'pending',
+                'to_status' => 'approved_admin',
+            ], [
+                'user_id' => $adminUser?->id,
+                'note' => 'Disetujui oleh admin (Nomor Surat Terbit)',
+                'ip_address' => '127.0.0.1',
+                'user_agent' => 'Mozilla/5.0',
+                'created_at' => now()->subHours(1),
+            ]);
+        }
     }
 }

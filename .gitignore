@@ -18,10 +18,26 @@ yarn-error.log
 /.idea
 /.vscode
 
-# AI working artifacts
-/.agents
+# AI & Agentic Tools / Artifacts
+/.agents/
+/.gemini/
+/.claude/
+/.cursor/
+/.cursorrules
+/.windsurf/
+/.cline/
+/.roo/
+/.roomodes
+/.continue/
+/.copilot/
+.aider*
+AGENTS.md
+agents.md
+GEMINI.md
+CLAUDE.md
 /clean_template.php
 /run-migrations.php
-/test_m1_challenger.php
-/test_m1_challenger2.php
-/test_m1_verification.php
+/test_m1_*.php
+
+# User custom folders
+/SURAT 2025/

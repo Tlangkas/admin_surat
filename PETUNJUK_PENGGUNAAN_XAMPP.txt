@@ -28,6 +28,7 @@ DAFTAR ISI
  11. Troubleshooting & FAQ (Pemecahan Masalah)
  12. Pemeliharaan, Backup Database & Log
  13. Pengujian Otomatis (Automated Testing)
+ 14. Peta Struktur File Proyek: Klasifikasi Frontend vs Backend
 
 
 ================================================================================
@@ -252,10 +253,27 @@ Agar aplikasi E-Surat dapat diakses dari komputer/HP lain di jaringan yang sama
        http://[IP_LAPTOP_SERVER]/admin
        Contoh: http://10.10.10.72/admin
 
-  Alternatif (Tanpa Apache VirtualHost):
-  Jalankan server internal PHP dari terminal folder proyek:
-       php -S localhost:8000 -t public server.php
-  Lalu buka: http://localhost:8000/admin
+   Alternatif (Tanpa Apache VirtualHost — Menggunakan Server Bawaan):
+
+   A. Menggunakan Laravel Artisan Serve (Disarankan untuk Pengembangan):
+      Jalankan perintah ini di terminal (Command Prompt/PowerShell) folder proyek:
+        php artisan serve --host=0.0.0.0 --port=8000
+
+      PENTING TENTANG PARAMETER --host=0.0.0.0:
+      - Default `php artisan serve` hanya mendengarkan di `127.0.0.1` (komputer ini saja).
+      - Jika diakses dari alamat IP (misal: http://10.10.10.252:8000) atau dari HP/laptop
+        lain, browser akan menampilkan error "ERR_CONNECTION_REFUSED".
+      - Oleh karena itu, SELALU tambahkan `--host=0.0.0.0` agar server bisa menerima
+        koneksi baik dari localhost, 127.0.0.1, maupun IP jaringan LAN/WiFi Anda.
+
+      Alamat akses:
+      - Dari laptop ini: http://localhost:8000/admin atau http://127.0.0.1:8000/admin
+      - Dari HP / Perangkat LAN: http://[IP_SERVER]:8000/admin
+        (Contoh: http://10.10.10.252:8000/admin)
+
+   B. Menggunakan PHP Built-in Server + router script:
+        php -S 0.0.0.0:8000 -t public server.php
+      (Juga menggunakan 0.0.0.0 agar bisa diakses lewat IP jaringan).
 
 
 ================================================================================
@@ -481,6 +499,134 @@ Pengubah, Status Asal ➔ Status Baru, Waktu, Alasan/Catatan, IP, & Browser.
     php artisan test
 
   (Menggunakan SQLite In-Memory. 100% AMAN tanpa mengubah database XAMPP Anda).
+
+================================================================================
+14. PETA STRUKTUR FILE PROYEK: KLASIFIKASI FRONTEND VS BACKEND
+================================================================================
+
+Aplikasi E-Surat dibangun dengan arsitektur bersih yang memisahkan batas
+tanggung jawab (Separation of Concerns) antara lapisan Frontend (Presentasi &
+Interaksi Pengguna) dan lapisan Backend (Logika Bisnis, Data & Layanan).
+
+Berikut adalah panduan direktori dan klasifikasi berkas aplikasi:
+
+--------------------------------------------------------------------------------
+A. LAPISAN FRONTEND (Presentasi, Antarmuka Pengguna, Visual Canvas, & Asset)
+--------------------------------------------------------------------------------
+Komponen yang bertanggung jawab atas tampilan pengguna (UI), formulir dinamis,
+tabel data, filter visual, live canvas interaktif, dan file styling.
+
+1. Filament Resources & Pages (UI Admin Panel) [app/Filament/]:
+   - app/Filament/Resources/LetterRequestResource.php
+     -> Frontend: UI formulir pengajuan surat dinamis, badge status, tabel pengajuan.
+   - app/Filament/Resources/LetterTemplateResource.php
+     -> Frontend: UI Visual No-Code Template Builder surat & tabel template.
+   - app/Filament/Resources/KaryawanResource.php
+     -> Frontend: UI tabel data guru/karyawan, modal import Excel, form identitas.
+   - app/Filament/Resources/SiswaResource.php
+     -> Frontend: UI tabel siswa, modal import Excel, form biodata siswa.
+   - app/Filament/Resources/UserResource.php
+     -> Frontend: UI manajemen pengguna & akun login admin/kepsek/gukar.
+   - app/Filament/Resources/LetterStatusLogResource.php
+     -> Frontend: UI tabel riwayat audit trail log status surat.
+   - app/Filament/Resources/*/Pages/ (Create*.php, Edit*.php, List*.php)
+     -> Frontend: Controller sub-halaman Filament untuk form dan tabel.
+   - app/Filament/Pages/SchoolSettingsPage.php
+     -> Frontend: Formulir pengaturan identitas sekolah, studio logo, & margin kop.
+   - app/Filament/Pages/Auth/RegisterGukar.php
+     -> Frontend: UI alur registrasi mandiri akun pegawai sekolah bertahap (wizard).
+   - app/Filament/Widgets/LetterStatsWidget.php
+     -> Frontend: Widget visual kartu ringkasan statistik persuratan di dashboard.
+
+2. Blade Views & Pratinjau Dokumen [resources/views/]:
+   - resources/views/filament/pages/school-settings.blade.php
+     -> Frontend: Komponen Alpine.js interaktif untuk Kanvas Pratinjau Kop Surat real-time.
+   - resources/views/letter-verify.blade.php
+     -> Frontend: Halaman publik verifikasi keaslian surat saat QR Code dipindai.
+   - resources/views/pdfs/letter.blade.php
+     -> Frontend: Template cetak dokumen resmi PDF (Kop Surat, Isi Surat, Stempel, QR).
+
+3. Asset Klien (CSS, JS, & Framework) [resources/ & public/]:
+   - resources/css/app.css          -> Frontend: Styling kustom aplikasi.
+   - resources/js/app.js            -> Frontend: Script JavaScript utama klien.
+   - resources/js/bootstrap.js      -> Frontend: Inisialisasi Axios & WebSocket Echo.
+   - public/css/filament/           -> Frontend: Bundel CSS Filament & Tailwind terdistribusi.
+   - public/js/filament/            -> Frontend: Bundel JavaScript Filament & Alpine.js.
+
+
+--------------------------------------------------------------------------------
+B. LAPISAN BACKEND (Logika Bisnis, Data Access, Otorisasi, Event, & Integrasi)
+--------------------------------------------------------------------------------
+Komponen yang bertanggung jawab atas proses di balik layar, penomoran otomatis,
+kalkulasi data, penegakan hak akses, pembuatan dokumen PDF/QR, dan basis data.
+
+1. Actions (Logika Bisnis Inti / Action Pattern) [app/Actions/Letter/]:
+   - app/Actions/Letter/AssignNomorSuratAction.php
+     -> Backend: Algoritma penomoran surat otomatis format SURAT 2025 (Nomor Urut,
+        Buku Agenda Tahunan, Kode Lembaga, Kode Klasifikasi, Bulan Romawi).
+   - app/Actions/Letter/GeneratePdfAndQrAction.php
+     -> Backend: Pembuatan berkas PDF resmi via DomPDF dan pembentukan QR Code
+        keaslian bertanda tangan digital HMAC SHA256.
+   - app/Actions/Letter/BroadcastLetterStatusAction.php
+     -> Backend: Pengendalian transisi status surat, pencatatan log audit, dan
+        pengiriman broadcast WebSocket Reverb secara real-time.
+
+2. Layanan & Parser Dokumen [app/Services/]:
+   - app/Services/DocxTemplateParser.php
+     -> Backend: Ekstraksi dan pemrosesan file Microsoft Word (.docx) dari arsip
+        SURAT 2025 menjadi template HTML & variabel siap pakai.
+
+3. Kompiler Template & Pustaka Preset [app/Helpers/]:
+   - app/Helpers/TemplateCompiler.php
+     -> Backend: Mesin penggabung placeholder template dengan data pengajuan surat
+        menjadi teks resmi baku Indonesia tanpa tanda garis miring (/ ) yang ambigu.
+   - app/Helpers/TemplatePresets.php
+     -> Backend: Pustaka 11 template baku bawaan sekolah (Surat Tugas, SK, SPPD, dll).
+
+4. Policies (Kebijakan Otorisasi & Hak Akses) [app/Policies/]:
+   - app/Policies/LetterRequestPolicy.php  -> Backend: Otorisasi persetujuan, tanda tangan, edit.
+   - app/Policies/LetterTemplatePolicy.php -> Backend: Otorisasi kelola template surat.
+   - app/Policies/KaryawanPolicy.php       -> Backend: Otorisasi data master guru/karyawan.
+   - app/Policies/SiswaPolicy.php          -> Backend: Otorisasi data master siswa.
+   - app/Policies/SchoolSettingsPolicy.php -> Backend: Otorisasi pengaturan sekolah & kop.
+   - app/Policies/UserPolicy.php           -> Backend: Otorisasi akun pengguna sistem.
+
+5. Models (Lapisan Akses Data & Eloquent ORM) [app/Models/]:
+   - app/Models/LetterRequest.php   -> Backend: Entitas pengajuan surat, relasi, cast payload JSON.
+   - app/Models/LetterTemplate.php  -> Backend: Entitas template surat, kode klasifikasi.
+   - app/Models/SchoolSettings.php  -> Backend: Entitas pengaturan sekolah, accessor akreditasi.
+   - app/Models/Karyawan.php        -> Backend: Entitas data pegawai, tautan user_id.
+   - app/Models/Siswa.php           -> Backend: Entitas data siswa, kelas, dan jurusan.
+   - app/Models/User.php            -> Backend: Entitas akun login & helper peran (role).
+   - app/Models/LetterStatusLog.php -> Backend: Entitas audit log riwayat perubahan status.
+
+6. Observers & Events (Siklus Hidup & Notifikasi) [app/Observers/ & app/Events/]:
+   - app/Observers/LetterRequestObserver.php -> Backend: Listener otomatis pembuat log status.
+   - app/Events/LetterStatusUpdated.php      -> Backend: Event broadcast channel privat user.
+
+7. Impor & Ekspor Excel [app/Imports/ & app/Exports/]:
+   - app/Imports/KaryawanImport.php, SiswaImport.php
+     -> Backend: Validasi baris, pembacaan file Excel, dan penyimpanan batch ke database.
+   - app/Exports/TemplateKaryawanExport.php, TemplateSiswaExport.php
+     -> Backend: Pembuatan struktur format file template Excel untuk diunduh.
+
+8. Database (Skema Tabel & Seeder) [database/]:
+   - database/migrations/           -> Backend: Skema struktur tabel database MySQL/MariaDB.
+   - database/seeders/              -> Backend: Pengisi data awal akun, template, dan master.
+
+9. Routing & Provider [routes/ & app/Providers/]:
+   - routes/web.php                 -> Backend: Rute verifikasi HMAC QR Code & proteksi rate limiting.
+   - routes/channels.php            -> Backend: Autentikasi channel broadcast WebSocket Reverb.
+   - app/Providers/AuthServiceProvider.php -> Backend: Pemetaan model ke policy & gate akses.
+   - app/Providers/Filament/AdminPanelProvider.php -> Backend: Konfigurasi inti panel admin.
+
+--------------------------------------------------------------------------------
+RINGKASAN CEPAT PANDUAN PENGEMBANGAN:
+- Ingin ubah tampilan/form/tabel?  -> Buka folder app/Filament/ atau resources/views/
+- Ingin ubah aturan bisnis/surat?  -> Buka folder app/Actions/ atau app/Helpers/
+- Ingin ubah hak akses pengguna?   -> Buka folder app/Policies/
+- Ingin ubah kolom database?       -> Buka folder database/migrations/ dan app/Models/
+--------------------------------------------------------------------------------
 
 ================================================================================
   SELESAI - E-SURAT SEKOLAH DIGITAL SYSTEM

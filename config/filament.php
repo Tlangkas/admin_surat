@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 return [
     'default_filesystem_disk' => env('FILESYSTEM_DISK', 'local'),
-    'broadcasting' => [
+    'broadcasting' => env('REVERB_ENABLED', false) ? [
         'echo' => [
             'broadcaster' => 'reverb',
             'key' => env('REVERB_APP_KEY'),
@@ -15,5 +15,5 @@ return [
             'forceTLS' => false,
             'disableStats' => true,
         ],
-    ],
+    ] : [],
 ];

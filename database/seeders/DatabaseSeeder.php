@@ -41,5 +41,8 @@ class DatabaseSeeder extends Seeder
 
         // Panggil seeder template surat + contoh pengajuan surat
         $this->call(LetterSeeder::class);
+
+        // Panggil seeder paket lengkap template SURAT 2025
+        $this->call(LetterTemplate2025Seeder::class);
     }
 }

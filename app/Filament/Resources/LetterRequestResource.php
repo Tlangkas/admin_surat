@@ -22,6 +22,11 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
+use Filament\Infolists\Components\Grid as InfolistGrid;
+use Filament\Infolists\Components\RepeatableEntry;
+use Filament\Infolists\Components\Section as InfolistSection;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Infolist;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -29,6 +34,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
@@ -55,6 +61,10 @@ class LetterRequestResource extends Resource
 
     protected static ?string $slug = 'pengajuan-surat';
 
+    protected static ?string $navigationGroup = 'Layanan Surat';
+
+    protected static ?int $navigationSort = 1;
+
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery()->with(['user', 'template']);
@@ -73,8 +83,8 @@ class LetterRequestResource extends Resource
     {
         return $form
             ->schema([
-                Section::make('Pilih Template Surat')
-                    ->description('Pilih jenis template surat resmi yang ingin diajukan')
+                Section::make(fn (string $operation): string => $operation === 'create' ? 'Pilih Template Surat' : 'Template Surat')
+                    ->description(fn (string $operation): string => $operation === 'create' ? 'Pilih jenis template surat resmi yang ingin diajukan.' : 'Template surat resmi yang digunakan.')
                     ->schema([
                         Select::make('template_id')
                             ->label('Template Surat')
@@ -170,25 +180,14 @@ class LetterRequestResource extends Resource
                             }
 
                             $lowerKey = strtolower($cleanKey);
-                            $cleanLabel = match ($lowerKey) {
-                                'nip' => 'NIP',
-                                'npsn' => 'NPSN',
-                                'ttd' => 'Tanda Tangan',
-                                'nomor_surat' => 'Nomor Surat',
-                                'tgl_berangkat', 'tanggal_berangkat' => 'Tanggal Berangkat',
-                                'tgl_kembali', 'tanggal_kembali' => 'Tanggal Kembali',
-                                'nama_sekolah' => 'Nama Sekolah',
-                                'alamat', 'alamat_domisili', 'alamat_tinggal' => 'Alamat / Tempat Tinggal',
-                                'alamat_tujuan', 'alamat_lokasi' => 'Alamat Tujuan',
-                                default => Str::headline($rawLabel),
-                            };
+                            $cleanLabel = self::resolveFieldLabel($cleanKey, $rawLabel);
 
                             if ($lowerKey === 'daftar_peserta' || $lowerKey === 'peserta') {
                                 $field = Repeater::make("payload_data.{$cleanKey}")
-                                    ->label('Daftar Peserta / Siswa')
+                                    ->label('Daftar Peserta')
                                     ->schema([
                                         Select::make('siswa_id')
-                                            ->label('Pilih dari Data Siswa (Opsional / Otomatisasi)')
+                                             ->label('Pilih dari Data Siswa (Opsional / Otomatisasi)')
                                             ->options(fn () => Siswa::query()->orderBy('nama')->get()->mapWithKeys(fn ($s) => [$s->id => "{$s->nama} ({$s->nisn} - {$s->kelas})"]))
                                             ->searchable()
                                             ->live()
@@ -210,15 +209,15 @@ class LetterRequestResource extends Resource
                                             ->required(),
 
                                         TextInput::make('identitas')
-                                            ->label('NISN / NIP')
+                                            ->label('Nomor Identitas (NISN atau NIP)')
                                             ->placeholder('Contoh: 0051234567 atau 1985...'),
 
                                         TextInput::make('kelas_jabatan')
-                                            ->label('Kelas / Jabatan')
+                                            ->label('Kelas atau Jabatan')
                                             ->placeholder('Contoh: XII RPL 1 atau Guru Pendamping'),
 
                                         TextInput::make('peran')
-                                            ->label('Peran / Keterangan')
+                                            ->label('Peran atau Keterangan')
                                             ->placeholder('Contoh: Ketua Tim, Peserta Lomba, dll.')
                                             ->default('Peserta'),
                                     ])
@@ -226,6 +225,31 @@ class LetterRequestResource extends Resource
                                     ->defaultItems(1)
                                     ->addActionLabel('+ Tambah Peserta')
                                     ->columnSpanFull();
+                            } elseif ($lowerKey === 'jenis_kelamin' || $lowerKey === 'jk') {
+                                $field = Select::make("payload_data.{$cleanKey}")
+                                    ->label($cleanLabel)
+                                    ->options([
+                                        'Laki-laki' => 'Laki-laki',
+                                        'Perempuan' => 'Perempuan',
+                                    ])
+                                    ->default('Laki-laki')
+                                    ->required();
+                            } elseif ($lowerKey === 'no_hp' || $lowerKey === 'telepon' || $lowerKey === 'telp' || $lowerKey === 'hp') {
+                                $field = TextInput::make("payload_data.{$cleanKey}")
+                                    ->label($cleanLabel)
+                                    ->tel()
+                                    ->placeholder('Contoh: 081234567890')
+                                    ->required();
+                            } elseif ($lowerKey === 'pejabat_pemberi_perintah') {
+                                $field = TextInput::make("payload_data.{$cleanKey}")
+                                    ->label($cleanLabel)
+                                    ->default('Kepala Sekolah')
+                                    ->required();
+                            } elseif ($lowerKey === 'beban_anggaran') {
+                                $field = TextInput::make("payload_data.{$cleanKey}")
+                                    ->label($cleanLabel)
+                                    ->default('BOS Sekolah')
+                                    ->required();
                             } elseif (str_contains($lowerKey, 'waktu') || str_contains($lowerKey, 'jam') || str_contains($lowerKey, 'time')) {
                                 $field = DateTimePicker::make("payload_data.{$cleanKey}")
                                     ->label($cleanLabel)
@@ -268,7 +292,7 @@ class LetterRequestResource extends Resource
                                         return $parsed ? $parsed->translatedFormat('j F Y') : $state;
                                     })
                                     ->required();
-                            } elseif (str_contains($lowerKey, 'keperluan') || str_contains($lowerKey, 'maksud') || str_contains($lowerKey, 'keterangan') || str_contains($lowerKey, 'alamat')) {
+                            } elseif (str_contains($lowerKey, 'keperluan') || str_contains($lowerKey, 'maksud') || str_contains($lowerKey, 'keterangan') || str_contains($lowerKey, 'alamat') || str_contains($lowerKey, 'pelanggaran') || str_contains($lowerKey, 'pembinaan') || str_contains($lowerKey, 'alasan')) {
                                 $field = Textarea::make("payload_data.{$cleanKey}")
                                     ->label($cleanLabel)
                                     ->rows(3)
@@ -283,12 +307,228 @@ class LetterRequestResource extends Resource
                         }
 
                         return [
-                            Section::make('Isi Data Surat')
-                                ->description('Lengkapi formulir di bawah ini sesuai kebutuhan template surat.')
+                            Section::make(fn (string $operation): string => $operation === 'create' ? 'Isi Data Surat' : 'Perbarui Data Surat')
+                                ->description(fn (string $operation): string => $operation === 'create' ? 'Lengkapi formulir di bawah ini sesuai kebutuhan template surat.' : 'Perbarui data isian formulir surat jika terdapat perbaikan.')
                                 ->schema($fields)
                                 ->columns(2),
                         ];
                     }),
+            ]);
+    }
+
+    /** Resolves variable key into a clean, unambiguous Indonesian label without slashes. */
+    public static function resolveFieldLabel(string $key, ?string $fallback = null): string
+    {
+        $cleanKey = trim($key);
+        $lowerKey = strtolower($cleanKey);
+
+        return match ($lowerKey) {
+            'nama' => 'Nama',
+            'nip' => 'NIP',
+            'nisn' => 'NISN',
+            'nis' => 'NIS',
+            'ttl', 'tempat_tanggal_lahir' => 'Tempat, Tanggal Lahir',
+            'jenis_kelamin', 'jk' => 'Jenis Kelamin',
+            'kelas' => 'Kelas',
+            'jurusan' => 'Jurusan',
+            'jabatan' => 'Jabatan',
+            'mata_pelajaran', 'mapel' => 'Mata Pelajaran',
+            'npsn' => 'NPSN',
+            'ttd' => 'Tanda Tangan',
+            'nomor_surat' => 'Nomor Surat',
+            'tgl_berangkat', 'tanggal_berangkat' => 'Tanggal Berangkat',
+            'tgl_kembali', 'tanggal_kembali' => 'Tanggal Kembali',
+            'nama_sekolah', 'sekolah' => 'Unit Kerja',
+            'nama_orang_tua', 'orang_tua', 'wali' => 'Nama Orang Tua',
+            'pekerjaan_orang_tua' => 'Pekerjaan Orang Tua',
+            'no_hp', 'telepon', 'telp', 'hp' => 'Nomor Telepon',
+            'alamat', 'alamat_domisili', 'alamat_tinggal' => 'Alamat',
+            'tujuan' => 'Tujuan',
+            'alamat_tujuan', 'alamat_lokasi' => 'Alamat Tujuan',
+            'keperluan', 'maksud' => 'Keperluan',
+            'nama_kegiatan', 'kegiatan' => 'Nama Kegiatan',
+            'tempat_kegiatan', 'lokasi', 'tempat' => 'Tempat Pelaksanaan',
+            'hari_tanggal' => 'Hari, Tanggal',
+            'waktu', 'tanggal_pelaksanaan' => 'Waktu Pelaksanaan',
+            'nama_siswa' => 'Nama Siswa',
+            'transportasi' => 'Transportasi',
+            'pejabat_pemberi_perintah' => 'Pejabat Pemberi Perintah',
+            'pangkat_golongan' => 'Pangkat dan Golongan',
+            'tingkat_biaya' => 'Tingkat Biaya',
+            'beban_anggaran' => 'Pembebanan Anggaran',
+            'lama_perjalanan' => 'Lama Perjalanan',
+            'bentuk_pelanggaran', 'pelanggaran' => 'Bentuk Pelanggaran',
+            'poin_pelanggaran' => 'Poin Pelanggaran',
+            'tindakan_pembinaan' => 'Tindakan Pembinaan',
+            'dudi_mitra', 'perusahaan' => 'Mitra Industri',
+            'sekolah_tujuan' => 'Sekolah Tujuan',
+            'alasan_pindah' => 'Alasan Pindah',
+            'tahun_lulus' => 'Tahun Lulus',
+            'no_ijazah' => 'Nomor Ijazah',
+            'keterangan' => 'Keterangan',
+            default => ! empty($fallback) ? Str::headline($fallback) : Str::headline($cleanKey),
+        };
+    }
+
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->schema([
+                InfolistSection::make('Informasi Pengajuan Surat')
+                    ->icon('heroicon-o-information-circle')
+                    ->schema([
+                        InfolistGrid::make(['default' => 1, 'md' => 3])->schema([
+                            TextEntry::make('template.name')
+                                ->label('Template Surat')
+                                ->badge()
+                                ->color('primary'),
+
+                            TextEntry::make('nomor_surat_display')
+                                ->label('Nomor Surat')
+                                ->state(fn (LetterRequest $record): string =>
+                                    $record->nomor_surat ?: ($record->payload_data['nomor_surat'] ?? 'Belum Diterbitkan')
+                                )
+                                ->weight('bold'),
+
+                            TextEntry::make('status')
+                                ->label('Status Pengajuan')
+                                ->badge()
+                                ->formatStateUsing(fn (string $state): string => match ($state) {
+                                    'pending' => 'Menunggu Persetujuan Admin',
+                                    'approved_admin' => 'Disetujui Admin',
+                                    'signed' => 'Telah Ditandatangani',
+                                    'rejected' => 'Ditolak',
+                                    default => $state,
+                                })
+                                ->color(fn (string $state): string => match ($state) {
+                                    'pending' => 'warning',
+                                    'approved_admin' => 'info',
+                                    'signed' => 'success',
+                                    'rejected' => 'danger',
+                                    default => 'gray',
+                                }),
+                        ]),
+
+                        InfolistGrid::make(['default' => 1, 'md' => 3])->schema([
+                            TextEntry::make('user.name')
+                                ->label('Diajukan Oleh')
+                                ->icon('heroicon-o-user')
+                                ->helperText(fn (LetterRequest $record): ?string => $record->user?->email),
+
+                            TextEntry::make('created_at')
+                                ->label('Tanggal Pengajuan')
+                                ->icon('heroicon-o-calendar')
+                                ->dateTime('j F Y, H:i')
+                                ->suffix(' WIB'),
+
+                            TextEntry::make('signed_at')
+                                ->label('Tanggal Ditandatangani')
+                                ->icon('heroicon-o-check-badge')
+                                ->dateTime('j F Y, H:i')
+                                ->suffix(' WIB')
+                                ->placeholder('Belum ditandatangani'),
+                        ]),
+
+                        TextEntry::make('rejection_note')
+                            ->label('Alasan Penolakan')
+                            ->icon('heroicon-o-exclamation-triangle')
+                            ->state(fn (LetterRequest $record): ?string =>
+                                $record->payload_data['alasan_penolakan']
+                                ?? $record->payload_data['rejection_reason']
+                                ?? $record->statusLogs()->where('to_status', 'rejected')->latest()->value('note')
+                                ?? 'Surat ini telah ditolak oleh pihak sekolah.'
+                            )
+                            ->color('danger')
+                            ->weight('bold')
+                            ->visible(fn (LetterRequest $record): bool => $record->status === 'rejected')
+                            ->columnSpanFull(),
+                    ]),
+
+                InfolistSection::make('Rincian Data Surat')
+                    ->icon('heroicon-o-document-text')
+                    ->schema(function (?LetterRequest $record): array {
+                        if (! $record) {
+                            return [];
+                        }
+
+                        $entries = [];
+                        $payload = $record->payload_data ?? [];
+
+                        foreach ($payload as $key => $value) {
+                            $cleanKey = trim((string) $key);
+                            if ($cleanKey === '' || $cleanKey === 'nomor_surat') {
+                                continue;
+                            }
+
+                            $lowerKey = strtolower($cleanKey);
+                            $label = self::resolveFieldLabel($cleanKey);
+
+                            if (($lowerKey === 'daftar_peserta' || $lowerKey === 'peserta') && is_array($value)) {
+                                $entries[] = RepeatableEntry::make("payload_data.{$cleanKey}")
+                                    ->label('Daftar Peserta')
+                                    ->schema([
+                                        TextEntry::make('nama')->label('Nama Peserta'),
+                                        TextEntry::make('identitas')->label('Nomor Identitas (NISN atau NIP)'),
+                                        TextEntry::make('kelas_jabatan')->label('Kelas atau Jabatan'),
+                                        TextEntry::make('peran')->label('Peran atau Keterangan'),
+                                    ])
+                                    ->columns(['default' => 1, 'md' => 4])
+                                    ->columnSpanFull();
+                            } elseif (! is_array($value) && $value !== '') {
+                                $isLong = strlen((string) $value) > 60
+                                    || str_contains($lowerKey, 'alamat')
+                                    || str_contains($lowerKey, 'keperluan')
+                                    || str_contains($lowerKey, 'alasan')
+                                    || str_contains($lowerKey, 'keterangan')
+                                    || str_contains($lowerKey, 'pelanggaran');
+
+                                $entries[] = TextEntry::make("payload_data.{$cleanKey}")
+                                    ->label($label)
+                                    ->state((string) $value)
+                                    ->columnSpan($isLong ? ['default' => 1, 'md' => 2] : 1);
+                            }
+                        }
+
+                        return $entries;
+                    })
+                    ->columns(['default' => 1, 'md' => 2]),
+
+                InfolistSection::make('Berkas & Validasi Dokumen')
+                    ->icon('heroicon-o-shield-check')
+                    ->schema([
+                        InfolistGrid::make(['default' => 1, 'md' => 2])->schema([
+                            TextEntry::make('pdf_path')
+                                ->label('Dokumen Surat Resmi (PDF)')
+                                ->icon('heroicon-o-arrow-down-tray')
+                                ->state(fn (LetterRequest $record): string =>
+                                    $record->pdf_path ? 'Unduh Dokumen Surat (PDF)' : 'Dokumen PDF belum diterbitkan'
+                                )
+                                ->url(fn (LetterRequest $record): ?string =>
+                                    $record->pdf_path ? asset('storage/' . $record->pdf_path) : null,
+                                    shouldOpenInNewTab: true
+                                )
+                                ->color(fn (LetterRequest $record): string => $record->pdf_path ? 'primary' : 'gray'),
+
+                            TextEntry::make('uuid')
+                                ->label('Tautan Verifikasi Keaslian Surat')
+                                ->icon('heroicon-o-qr-code')
+                                ->state(fn (LetterRequest $record): string =>
+                                    $record->isSigned() ? 'Buka Tautan Verifikasi Keaslian' : 'Tersedia setelah surat ditandatangani'
+                                )
+                                ->url(fn (LetterRequest $record): ?string =>
+                                    $record->isSigned() ? $record->verificationUrl() : null,
+                                    shouldOpenInNewTab: true
+                                )
+                                ->color(fn (LetterRequest $record): string => $record->isSigned() ? 'success' : 'gray')
+                                ->copyable(fn (LetterRequest $record): bool => $record->isSigned())
+                                ->copyableState(fn (LetterRequest $record): ?string => $record->isSigned() ? $record->verificationUrl() : null)
+                                ->helperText(fn (LetterRequest $record): ?HtmlString =>
+                                    $record->isSigned()
+                                        ? new HtmlString('<span class="text-xs text-gray-500 dark:text-gray-400 break-all font-mono select-all block mt-1 leading-relaxed" style="word-break: break-all;">' . e($record->verificationUrl()) . '</span>')
+                                        : null
+                                ),
+                        ]),
+                    ]),
             ]);
     }
 
@@ -442,6 +682,20 @@ class LetterRequestResource extends Resource
                             ->send();
                     }),
 
+                Tables\Actions\Action::make('regenerate_pdf')
+                    ->label('Terbitkan Ulang PDF')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalHeading('Terbitkan Ulang Dokumen PDF?')
+                    ->modalDescription('PDF surat ini akan digenerate ulang menggunakan tata letak Kop Surat dan pengaturan sekolah terkini.')
+                    ->visible(fn (LetterRequest $record): bool =>
+                        $record->isSigned() && (Auth::user()?->isAdmin() || Auth::user()?->isKepsek()))
+                    ->action(function (LetterRequest $record): void {
+                        app(GeneratePdfAndQrAction::class)->execute($record);
+                        Notification::make()->title('PDF Surat Berhasil Diperbarui dengan Kop Terkini')->success()->send();
+                    }),
+
                 Tables\Actions\Action::make('download_pdf')
                     ->label('Download PDF')
                     ->icon('heroicon-o-arrow-down-tray')
@@ -453,7 +707,10 @@ class LetterRequestResource extends Resource
                         Auth::user()?->can('downloadPdf', $record)),
 
                 Tables\Actions\ActionGroup::make([
-                    Tables\Actions\ViewAction::make()->label('Lihat Detail'),
+                    Tables\Actions\ViewAction::make()
+                        ->label('Lihat Detail')
+                        ->modalHeading('Detail Pengajuan Surat')
+                        ->modalWidth('4xl'),
                     Tables\Actions\EditAction::make()
                         ->label('Edit')
                         ->visible(fn (LetterRequest $record): bool =>
@@ -470,6 +727,9 @@ class LetterRequestResource extends Resource
                 ]),
             ])
             ->defaultSort('created_at', 'desc')
+            ->emptyStateHeading('Belum Ada Pengajuan Surat')
+            ->emptyStateDescription('Klik tombol "Buat Pengajuan Surat" untuk mulai mengajukan surat resmi.')
+            ->emptyStateIcon('heroicon-o-envelope')
             ->paginated([10, 25, 50, 100]);
     }
 

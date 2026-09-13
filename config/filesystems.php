@@ -39,7 +39,7 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            'url' => env('FILESYSTEM_PUBLIC_URL', '/storage'),
             'visibility' => 'public',
             'throw' => false,
         ],
@@ -47,7 +47,7 @@ return [
         'pdfs' => [
             'driver' => 'local',
             'root' => storage_path('app/pdfs'),
-            'url' => env('APP_URL').'/storage/pdfs',
+            'url' => env('FILESYSTEM_PDFS_URL', '/storage/pdfs'),
             'visibility' => 'public',
             'throw' => false,
         ],

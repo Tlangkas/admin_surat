@@ -37,6 +37,15 @@ class KaryawanResource extends Resource
 
     protected static ?string $slug = 'guru-karyawan';
 
+    protected static ?string $navigationGroup = 'Master Data';
+
+    protected static ?int $navigationSort = 1;
+
+    public static function getPolicyClass(): string
+    {
+        return \App\Policies\KaryawanPolicy::class;
+    }
+
     public static function canAccess(): bool
     {
         if (auth()->guest()) {
@@ -229,7 +238,10 @@ class KaryawanResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
-            ->defaultSort('created_at', 'desc');
+            ->defaultSort('created_at', 'desc')
+            ->emptyStateHeading('Belum Ada Data Guru & Karyawan')
+            ->emptyStateDescription('Tambahkan data guru dan karyawan secara manual atau impor melalui file Excel.')
+            ->emptyStateIcon('heroicon-o-users');
     }
 
     public static function getPages(): array

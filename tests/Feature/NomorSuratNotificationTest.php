@@ -39,7 +39,7 @@ class NomorSuratNotificationTest extends TestCase
 
     public function test_nomor_surat_auto_generated_on_approval(): void
     {
-        SchoolSettings::getInstance()->update(['kode_sekolah' => '421']);
+        SchoolSettings::getInstance()->update(['kode_sekolah' => '29.15']);
 
         $gukar = User::factory()->create(['role' => 'gukar']);
         $template = $this->makeTemplate('SPD');
@@ -50,15 +50,16 @@ class NomorSuratNotificationTest extends TestCase
 
         $request->refresh();
         $this->assertEquals('approved_admin', $request->status);
+        $bulanRomawi = \App\Actions\Letter\AssignNomorSuratAction::toRomanMonth((int) $request->created_at->month);
         $this->assertSame(
-            sprintf('421/001/SPD/%d', $request->created_at->year),
+            sprintf('001/29.15/E/%s/%d', $bulanRomawi, $request->created_at->year),
             $request->payload_data['nomor_surat']
         );
     }
 
     public function test_nomor_surat_sequence_increments_per_template_and_year(): void
     {
-        SchoolSettings::getInstance()->update(['kode_sekolah' => '421']);
+        SchoolSettings::getInstance()->update(['kode_sekolah' => '29.15']);
 
         $gukar = User::factory()->create(['role' => 'gukar']);
         $template = $this->makeTemplate('SPD');
@@ -71,8 +72,8 @@ class NomorSuratNotificationTest extends TestCase
         app(BroadcastLetterStatusAction::class)->execute($first, 'approved_admin');
         app(BroadcastLetterStatusAction::class)->execute($second, 'approved_admin');
 
-        $this->assertStringContainsString('/001/', $first->fresh()->payload_data['nomor_surat']);
-        $this->assertStringContainsString('/002/', $second->fresh()->payload_data['nomor_surat']);
+        $this->assertStringStartsWith('001/29.15/', $first->fresh()->payload_data['nomor_surat']);
+        $this->assertStringStartsWith('002/29.15/', $second->fresh()->payload_data['nomor_surat']);
     }
 
     public function test_manual_nomor_surat_is_preserved(): void

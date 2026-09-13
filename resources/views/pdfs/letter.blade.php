@@ -19,66 +19,59 @@
             padding: 0;
         }
 
-        /* Kop Surat Resmi */
-        .header-table {
+        /* Kop Surat Resmi Standar Instansi Pendidikan */
+        .kop-table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 5px;
         }
 
-        .header-table td {
+        .kop-table td {
+            padding: 0;
+        }
+
+        .kop-text {
+            text-align: center;
             vertical-align: middle;
         }
 
-        .logo-cell {
-            width: 85px;
-            text-align: left;
-        }
-
-        .logo-img {
-            width: 75px;
-            height: auto;
-            max-height: 80px;
-        }
-
-        .header-text {
-            text-align: center;
-        }
-
-        .header-text h3 {
-            font-size: 12pt;
+        .kop-text h3 {
+            font-size: 11pt;
             font-weight: bold;
             margin: 0;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            line-height: 1.2;
         }
 
-        .header-text h2 {
+        .kop-text h2 {
+            font-size: 12.5pt;
+            font-weight: bold;
+            margin: 2px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            line-height: 1.2;
+        }
+
+        .kop-text h1 {
             font-size: 14pt;
             font-weight: bold;
             margin: 2px 0;
             text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .header-text h1 {
-            font-size: 15pt;
-            font-weight: bold;
-            margin: 2px 0;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .header-text p {
-            font-size: 9.5pt;
-            margin: 1px 0;
+            letter-spacing: 0.5px;
             line-height: 1.2;
+        }
+
+        .kop-text p {
+            font-size: 8.5pt;
+            margin: 1px 0;
+            line-height: 1.25;
         }
 
         .header-divider {
             border: none;
             border-top: 3px double #000;
-            margin-top: 6px;
+            margin-top: 8px;
             margin-bottom: 20px;
         }
 
@@ -153,23 +146,62 @@
     </style>
 </head>
 <body>
-    {{-- Header Kop Surat Resmi --}}
-    <table class="header-table">
+    @php
+        $hasLogoKiri = !empty($settings->getLogoBase64());
+        $hasLogoKanan = !empty($settings->getLogoKananBase64());
+        
+        $logoWidth = (int) ($settings->logo_width ?? 85);
+        $logoKananWidth = (int) ($settings->logo_kanan_width ?? 85);
+        $kopGap = (int) ($settings->kop_gap ?? 10);
+        
+        $logoValign = in_array($settings->logo_valign, ['top', 'middle', 'bottom']) ? $settings->logo_valign : 'middle';
+        $logoOffsetX = (int) ($settings->logo_offset_x ?? 0);
+        $logoOffsetY = (int) ($settings->logo_offset_y ?? 0);
+
+        $logoKananValign = in_array($settings->logo_kanan_valign, ['top', 'middle', 'bottom']) ? $settings->logo_kanan_valign : 'middle';
+        $logoKananOffsetX = (int) ($settings->logo_kanan_offset_x ?? 0);
+        $logoKananOffsetY = (int) ($settings->logo_kanan_offset_y ?? 0);
+
+        // Lebar kolom samping simetris agar teks berada tepat 100% di tengah halaman
+        $sideWidth = max($hasLogoKiri ? $logoWidth : 0, $hasLogoKanan ? $logoKananWidth : 0) + $kopGap;
+    @endphp
+
+    {{-- Kop Surat Resmi Standar Instansi Pendidikan (Tabel Presisi Senter Simetris) --}}
+    <table class="kop-table">
         <tr>
-            @if($settings->getLogoBase64())
-                <td class="logo-cell">
-                    <img src="{{ $settings->getLogoBase64() }}" alt="Logo" class="logo-img">
-                </td>
-            @endif
-            <td class="header-text">
+            {{-- Kolom Kiri: Logo Utama --}}
+            <td style="width: {{ $sideWidth }}px; text-align: left; vertical-align: {{ $logoValign }};">
+                @if($hasLogoKiri)
+                    <div style="margin-left: {{ $logoOffsetX }}px; margin-top: {{ $logoOffsetY }}px;">
+                        <img src="{{ $settings->getLogoBase64() }}" 
+                             alt="Logo Utama" 
+                             style="width: {{ $logoWidth }}px; height: auto; display: block;">
+                    </div>
+                @endif
+            </td>
+
+            {{-- Kolom Tengah: Teks Instansi Kop Surat (100% Senter Halaman) --}}
+            <td class="kop-text">
                 <h3>{{ $settings->kop_line_1 ?? 'PEMERINTAH KOTA SURAKARTA' }}</h3>
                 <h2>{{ $settings->kop_line_2 ?? 'DINAS PENDIDIKAN' }}</h2>
                 <h1>{{ strtoupper($settings->nama_sekolah ?? 'SD NEGERI 1 SURAKARTA') }}</h1>
                 <p>{{ $settings->alamat_lengkap ?? $settings->alamat }}</p>
-                <p>{{ $settings->kontak_lengkap ?? ('Telp. ' . ($settings->telepon ?? '-') . ' | Email: ' . ($settings->email ?? '-')) }}</p>
+                <p>{{ implode(' | ', array_filter([$settings->kontak_lengkap, $settings->npsn ? ('NPSN: ' . $settings->npsn) : null, $settings->formatted_akreditasi])) }}</p>
+            </td>
+
+            {{-- Kolom Kanan: Logo Sekunder atau Penyeimbang Simetri --}}
+            <td style="width: {{ $sideWidth }}px; text-align: right; vertical-align: {{ $logoKananValign }};">
+                @if($hasLogoKanan)
+                    <div style="margin-left: {{ $logoKananOffsetX }}px; margin-top: {{ $logoKananOffsetY }}px; float: right;">
+                        <img src="{{ $settings->getLogoKananBase64() }}" 
+                             alt="Logo Sekunder" 
+                             style="width: {{ $logoKananWidth }}px; height: auto; display: block;">
+                    </div>
+                @endif
             </td>
         </tr>
     </table>
+
     <hr class="header-divider">
 
     {{-- Konten Surat --}}
@@ -181,13 +213,26 @@
     <table class="footer-table">
         <tr>
             <td class="qr-section">
-                <div class="qr-box">
-                    {!! $qrCodeSvg !!}
-                </div>
+                @if(!empty($qrCodeSvg))
+                    <div class="qr-box">
+                        <img src="data:image/svg+xml;base64,{{ base64_encode($qrCodeSvg) }}" 
+                             alt="QR Code Verifikasi" 
+                             style="width: 75px; height: 75px; display: block;">
+                        <p style="font-size: 7pt; margin: 4px 0 0 0; color: #475569; text-align: left; line-height: 1.2;">
+                            Dokumen ini resmi dan ditandatangani elektronik.<br>
+                            Pindai QR Code untuk verifikasi keaslian.
+                        </p>
+                    </div>
+                @endif
             </td>
             <td class="ttd-section">
                 <div class="ttd-box">
-                    <p style="margin: 0;">{{ $settings->kota_kabupaten ?? 'Surakarta' }}, {{ now()->translatedFormat('d F Y') }}</p>
+                    @php
+                        $tanggalTtd = $letterRequest->signed_at 
+                            ? $letterRequest->signed_at->translatedFormat('d F Y') 
+                            : ($letterRequest->created_at ? $letterRequest->created_at->translatedFormat('d F Y') : now()->translatedFormat('d F Y'));
+                    @endphp
+                    <p style="margin: 0;">{{ $settings->kota_kabupaten ?? 'Surakarta' }}, {{ $tanggalTtd }}</p>
                     <p style="font-weight: bold; margin: 4px 0 0 0;">{{ $settings->kepala_sekolah_jabatan ?? 'Kepala Sekolah' }}</p>
                     
                     @if($settings->getTtdKepsekBase64())

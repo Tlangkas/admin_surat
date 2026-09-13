@@ -21,6 +21,7 @@
 9. [🛠️ Troubleshooting & FAQ (Pemecahan Masalah)](#-troubleshooting--faq-pemecahan-masalah)
 10. [💾 Pemeliharaan, Backup & Log File](#-pemeliharaan-backup--log-file)
 11. [🧪 Menjalankan Test Otomatis](#-menjalankan-test-otomatis)
+12. [📁 Struktur File Proyek: Frontend vs Backend](#-struktur-file-proyek-frontend-vs-backend)
 
 ---
 
@@ -52,9 +53,16 @@ Jika aplikasi sudah pernah diinstal dan dikonfigurasi di komputer Anda, ikuti la
 Buka browser pilihan Anda dan akses salah satu alamat berikut:
 - **URL Domain VirtualHost (Rekomendasi):**  
   👉 **[http://e-surat.local/admin](http://e-surat.local/admin)**
-- **URL Server Internal PHP:**  
-  Jalankan perintah berikut di terminal folder proyek: `php -S localhost:8000 -t public server.php`  
-  👉 **[http://localhost:8000/admin](http://localhost:8000/admin)**
+- **URL Server Development (Laravel Artisan Serve):**  
+  Jalankan perintah berikut di terminal folder proyek:  
+  ```bash
+  php artisan serve --host=0.0.0.0 --port=8000
+  ```
+  *(Parameter `--host=0.0.0.0` wajib disertakan agar aplikasi dapat diakses baik dari `localhost` komputer server maupun alamat IP LAN/WiFi dari HP atau komputer lain)*  
+  👉 **[http://localhost:8000/admin](http://localhost:8000/admin)** atau **`http://[IP_SERVER]:8000/admin`**
+
+- **Alternatif PHP Built-in Server:**  
+  `php -S 0.0.0.0:8000 -t public server.php`
 
 > 💡 *Jika domain `e-surat.local` belum aktif atau muncul error `DNS_PROBE_FINISHED_NXDOMAIN`, klik 2x file [tambah_hosts.bat](file:///c:/xampp/htdocs/admin_surat-main/tambah_hosts.bat) di folder proyek untuk mengaktifkannya secara otomatis.*
 
@@ -475,6 +483,54 @@ php artisan test tests/Feature
 # Menjalankan satu file test spesifik
 php artisan test tests/Feature/LetterRequestTest.php
 ```
+
+---
+
+## 📁 Struktur File Proyek: Frontend vs Backend
+
+Aplikasi **E-Surat Sekolah** menerapkan pemisahan arsitektur (*Separation of Concerns*) yang tegas antara lapisan **Frontend** (Presentasi & Tampilan) dan **Backend** (Logika Bisnis & Layanan):
+
+### 🎨 1. Lapisan Frontend (Tampilan & Interaksi Pengguna)
+- **Filament Resources (UI Panel Admin)** (`app/Filament/Resources/`):
+  - [LetterRequestResource.php](file:///d:/e%20surat/app/Filament/Resources/LetterRequestResource.php) — UI Formulir Pengajuan Surat dinamis & Tabel pengajuan.
+  - [LetterTemplateResource.php](file:///d:/e%20surat/app/Filament/Resources/LetterTemplateResource.php) — UI Visual No-Code Template Builder & Tabel template.
+  - [KaryawanResource.php](file:///d:/e%20surat/app/Filament/Resources/KaryawanResource.php) — UI Tabel Guru/Karyawan & Modal Import Excel.
+  - [SiswaResource.php](file:///d:/e%20surat/app/Filament/Resources/SiswaResource.php) — UI Tabel Data Siswa & Modal Import Excel.
+  - [UserResource.php](file:///d:/e%20surat/app/Filament/Resources/UserResource.php) — UI Manajemen Pengguna & Akun Login.
+  - [LetterStatusLogResource.php](file:///d:/e%20surat/app/Filament/Resources/LetterStatusLogResource.php) — UI Tabel Audit Trail Log Status Surat.
+- **Filament Pages & Widgets** (`app/Filament/Pages/` & `app/Filament/Widgets/`):
+  - [SchoolSettingsPage.php](file:///d:/e%20surat/app/Filament/Pages/SchoolSettingsPage.php) — Formulir konfigurasi identitas sekolah, gap kop, & logo studio.
+  - [RegisterGukar.php](file:///d:/e%20surat/app/Filament/Pages/Auth/RegisterGukar.php) — UI Registrasi Mandiri Pegawai (Multi-step Wizard).
+  - [LetterStatsWidget.php](file:///d:/e%20surat/app/Filament/Widgets/LetterStatsWidget.php) — Widget visual kartu statistik persuratan di Dashboard.
+- **Blade Views & PDF Templates** (`resources/views/`):
+  - [school-settings.blade.php](file:///d:/e%20surat/resources/views/filament/pages/school-settings.blade.php) — Komponen Alpine.js kanvas pratinjau Kop Surat real-time.
+  - [letter-verify.blade.php](file:///d:/e%20surat/resources/views/letter-verify.blade.php) — Halaman publik hasil scan QR Code keaslian surat.
+  - [letter.blade.php](file:///d:/e%20surat/resources/views/pdfs/letter.blade.php) — Layout cetak dokumen resmi PDF (Kop, Isi, Stempel, QR).
+- **Asset Klien**:
+  - `resources/css/` & `resources/js/` — Styling kustom dan script klien.
+  - `public/css/filament/` & `public/js/filament/` — Bundel asset terdistribusi Filament & Alpine.js.
+
+### ⚙️ 2. Lapisan Backend (Logika Bisnis & Pemrosesan Data)
+- **Actions (Logika Bisnis / Action Pattern)** (`app/Actions/Letter/`):
+  - [AssignNomorSuratAction.php](file:///d:/e%20surat/app/Actions/Letter/AssignNomorSuratAction.php) — Penomoran surat otomatis tahunan format SURAT 2025 (`001/29.15/E/IX/2026`).
+  - [GeneratePdfAndQrAction.php](file:///d:/e%20surat/app/Actions/Letter/GeneratePdfAndQrAction.php) — Engine kompilasi PDF resmi via DomPDF dan QR Code HMAC SHA256.
+  - [BroadcastLetterStatusAction.php](file:///d:/e%20surat/app/Actions/Letter/BroadcastLetterStatusAction.php) — Transisi status surat, pencatatan log audit, dan broadcast WebSocket Reverb.
+- **Layanan Dokumen & Parser** (`app/Services/`):
+  - [DocxTemplateParser.php](file:///d:/e%20surat/app/Services/DocxTemplateParser.php) — Ekstraksi dan parser dokumen Word (.docx) SURAT 2025 menjadi template HTML.
+- **Helpers & Kompiler Template** (`app/Helpers/`):
+  - [TemplateCompiler.php](file:///d:/e%20surat/app/Helpers/TemplateCompiler.php) — Kompilasi placeholder menjadi label resmi baku Indonesia tanpa garis miring.
+  - [TemplatePresets.php](file:///d:/e%20surat/app/Helpers/TemplatePresets.php) — Pustaka 11 template bawaan sekolah (Surat Tugas, SK, SPPD, dll).
+- **Policies (Kebijakan Otorisasi)** (`app/Policies/`):
+  - [LetterRequestPolicy.php](file:///d:/e%20surat/app/Policies/LetterRequestPolicy.php), [LetterTemplatePolicy.php](file:///d:/e%20surat/app/Policies/LetterTemplatePolicy.php), [KaryawanPolicy.php](file:///d:/e%20surat/app/Policies/KaryawanPolicy.php), [SiswaPolicy.php](file:///d:/e%20surat/app/Policies/SiswaPolicy.php), [SchoolSettingsPolicy.php](file:///d:/e%20surat/app/Policies/SchoolSettingsPolicy.php), [UserPolicy.php](file:///d:/e%20surat/app/Policies/UserPolicy.php).
+- **Models (Eloquent ORM & Data Layer)** (`app/Models/`):
+  - [LetterRequest.php](file:///d:/e%20surat/app/Models/LetterRequest.php), [LetterTemplate.php](file:///d:/e%20surat/app/Models/LetterTemplate.php), [SchoolSettings.php](file:///d:/e%20surat/app/Models/SchoolSettings.php), [Karyawan.php](file:///d:/e%20surat/app/Models/Karyawan.php), [Siswa.php](file:///d:/e%20surat/app/Models/Siswa.php), [User.php](file:///d:/e%20surat/app/Models/User.php), [LetterStatusLog.php](file:///d:/e%20surat/app/Models/LetterStatusLog.php).
+- **Observers & Events** (`app/Observers/` & `app/Events/`):
+  - [LetterRequestObserver.php](file:///d:/e%20surat/app/Observers/LetterRequestObserver.php), [LetterStatusUpdated.php](file:///d:/e%20surat/app/Events/LetterStatusUpdated.php).
+- **Imports & Exports (Excel)** (`app/Imports/` & `app/Exports/`):
+  - Import dan Export Excel data Guru/Karyawan dan Siswa.
+- **Database & Routing**:
+  - `database/migrations/` (Skema tabel) & `database/seeders/` (Seeder data awal).
+  - `routes/web.php` (Rute publik verifikasi HMAC QR Code) & `routes/channels.php` (Otorisasi WebSocket).
 
 ---
 

@@ -36,6 +36,8 @@ class SiswaResource extends Resource
 
     protected static ?string $slug = 'data-siswa';
 
+    protected static ?string $navigationGroup = 'Master Data';
+
     protected static ?int $navigationSort = 2;
 
     public static function canAccess(): bool
@@ -210,7 +212,10 @@ class SiswaResource extends Resource
                         ->visible(fn (): bool => auth()->user()?->isAdmin()),
                 ]),
             ])
-            ->defaultSort('created_at', 'desc');
+            ->defaultSort('created_at', 'desc')
+            ->emptyStateHeading('Belum Ada Data Siswa')
+            ->emptyStateDescription('Tambahkan data siswa secara manual atau gunakan fitur impor file Excel.')
+            ->emptyStateIcon('heroicon-o-academic-cap');
     }
 
     public static function getPages(): array

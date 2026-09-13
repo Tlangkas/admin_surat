@@ -17,11 +17,12 @@ class AssignNomorSuratActionTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function makeTemplate(string $letterCode = 'SPD'): LetterTemplate
+    private function makeTemplate(string $letterCode = 'SPD', ?string $classificationCode = 'E'): LetterTemplate
     {
         return LetterTemplate::create([
             'name' => 'Surat Tugas',
             'letter_code' => $letterCode,
+            'classification_code' => $classificationCode,
             'content' => '<p>Nomor: {{ nomor_surat }}</p>',
             'variables' => ['nomor_surat'],
             'is_active' => true,
@@ -37,18 +38,19 @@ class AssignNomorSuratActionTest extends TestCase
         ]);
     }
 
-    public function test_formats_nomor_surat_with_school_letter_code_and_year(): void
+    public function test_formats_nomor_surat_with_official_surat_2025_pattern(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $this->actingAs($admin);
 
-        SchoolSettings::getInstance()->update(['kode_sekolah' => '007']);
-        $template = $this->makeTemplate('SPD');
+        SchoolSettings::getInstance()->update(['kode_sekolah' => '29.15']);
+        $template = $this->makeTemplate('ST-GUKAR', 'E');
         $request = $this->makeRequest($template);
 
         app(AssignNomorSuratAction::class)->execute($request);
 
-        $expected = sprintf('007/001/SPD/%d', $request->created_at->year);
+        $bulanRomawi = AssignNomorSuratAction::toRomanMonth((int) $request->created_at->month);
+        $expected = sprintf('001/29.15/E/%s/%d', $bulanRomawi, $request->created_at->year);
         $this->assertSame($expected, $request->fresh()->payload_data['nomor_surat']);
     }
 
@@ -57,7 +59,7 @@ class AssignNomorSuratActionTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
         $this->actingAs($admin);
 
-        $template = $this->makeTemplate('SK');
+        $template = $this->makeTemplate('SK', 'C');
         $request = $this->makeRequest($template, ['nomor_surat' => 'Manual/123/2026']);
 
         app(AssignNomorSuratAction::class)->execute($request);
@@ -65,7 +67,7 @@ class AssignNomorSuratActionTest extends TestCase
         $this->assertSame('Manual/123/2026', $request->fresh()->payload_data['nomor_surat']);
     }
 
-    public function test_defaults_to_421_and_sk_when_settings_or_template_are_empty(): void
+    public function test_defaults_to_29_15_and_E_when_settings_or_template_are_empty(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $this->actingAs($admin);
@@ -74,6 +76,7 @@ class AssignNomorSuratActionTest extends TestCase
         $template = LetterTemplate::create([
             'name' => 'Tanpa Kode',
             'letter_code' => '',
+            'classification_code' => null,
             'content' => '<p>{{ nomor_surat }}</p>',
             'is_active' => true,
         ]);
@@ -81,43 +84,48 @@ class AssignNomorSuratActionTest extends TestCase
 
         app(AssignNomorSuratAction::class)->execute($request);
 
-        $expected = sprintf('421/001/SK/%d', $request->created_at->year);
+        $bulanRomawi = AssignNomorSuratAction::toRomanMonth((int) $request->created_at->month);
+        $expected = sprintf('001/29.15/E/%s/%d', $bulanRomawi, $request->created_at->year);
         $this->assertSame($expected, $request->fresh()->payload_data['nomor_surat']);
     }
 
-    public function test_sequence_increments_per_template(): void
+    public function test_sequence_increments_globally_across_templates_within_year(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $this->actingAs($admin);
 
-        $template = $this->makeTemplate('SPD');
-        $first = $this->makeRequest($template);
-        $second = $this->makeRequest($template);
+        $templateA = $this->makeTemplate('ST-GUKAR', 'E');
+        $templateB = $this->makeTemplate('SP-ORTU', 'G');
+
+        $first = $this->makeRequest($templateA);
+        $second = $this->makeRequest($templateB);
 
         app(AssignNomorSuratAction::class)->execute($first);
         $first->update(['status' => 'approved_admin']);
         app(AssignNomorSuratAction::class)->execute($second);
 
-        $this->assertStringContainsString('/001/', $first->fresh()->payload_data['nomor_surat']);
-        $this->assertStringContainsString('/002/', $second->fresh()->payload_data['nomor_surat']);
+        $this->assertStringStartsWith('001/29.15/E/', $first->fresh()->payload_data['nomor_surat']);
+        $this->assertStringStartsWith('002/29.15/G/', $second->fresh()->payload_data['nomor_surat']);
     }
 
-    public function test_sequence_is_independent_between_templates(): void
+    public function test_starting_letter_number_is_respected(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $this->actingAs($admin);
 
-        $templateA = $this->makeTemplate('SPD');
-        $templateB = $this->makeTemplate('SK');
-        $requestA = $this->makeRequest($templateA);
-        $requestB = $this->makeRequest($templateB);
+        SchoolSettings::getInstance()->update([
+            'kode_sekolah' => '29.15',
+            'starting_letter_number' => 350,
+        ]);
 
-        app(AssignNomorSuratAction::class)->execute($requestA);
-        $requestA->update(['status' => 'approved_admin']);
-        app(AssignNomorSuratAction::class)->execute($requestB);
+        $template = $this->makeTemplate('SPPD', 'E');
+        $request = $this->makeRequest($template);
 
-        $this->assertSame('421/001/SPD/' . $requestA->created_at->year, $requestA->fresh()->payload_data['nomor_surat']);
-        $this->assertSame('421/001/SK/' . $requestB->created_at->year, $requestB->fresh()->payload_data['nomor_surat']);
+        app(AssignNomorSuratAction::class)->execute($request);
+
+        $bulanRomawi = AssignNomorSuratAction::toRomanMonth((int) $request->created_at->month);
+        $expected = sprintf('350/29.15/E/%s/%d', $bulanRomawi, $request->created_at->year);
+        $this->assertSame($expected, $request->fresh()->payload_data['nomor_surat']);
     }
 
     public function test_sequence_is_reset_for_different_year(): void
@@ -125,8 +133,9 @@ class AssignNomorSuratActionTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
         $this->actingAs($admin);
 
-        SchoolSettings::getInstance()->update(['kode_sekolah' => '421']);
-        $template = $this->makeTemplate('SPD');
+        SchoolSettings::getInstance()->update(['kode_sekolah' => '29.15']);
+        $template = $this->makeTemplate('SPD', 'E');
+
         $old = $this->makeRequest($template);
         $old->forceFill(['created_at' => Carbon::parse('2024-03-01 10:00:00')])->save();
 
@@ -136,8 +145,10 @@ class AssignNomorSuratActionTest extends TestCase
         $old->update(['status' => 'approved_admin']);
         app(AssignNomorSuratAction::class)->execute($recent);
 
-        $this->assertSame('421/001/SPD/2024', $old->fresh()->payload_data['nomor_surat']);
-        $this->assertSame('421/001/SPD/' . $recent->created_at->year, $recent->fresh()->payload_data['nomor_surat']);
+        $this->assertSame('001/29.15/E/III/2024', $old->fresh()->payload_data['nomor_surat']);
+
+        $recentBulan = AssignNomorSuratAction::toRomanMonth((int) $recent->created_at->month);
+        $this->assertSame('001/29.15/E/' . $recentBulan . '/' . $recent->created_at->year, $recent->fresh()->payload_data['nomor_surat']);
     }
 
     public function test_sequence_does_not_reuse_number_of_rejected_letter_that_kept_its_number(): void
@@ -145,7 +156,7 @@ class AssignNomorSuratActionTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
         $this->actingAs($admin);
 
-        $template = $this->makeTemplate('SPD');
+        $template = $this->makeTemplate('SPD', 'E');
 
         $first = $this->makeRequest($template);
         app(AssignNomorSuratAction::class)->execute($first);
@@ -158,8 +169,24 @@ class AssignNomorSuratActionTest extends TestCase
         $new = $this->makeRequest($template);
         app(AssignNomorSuratAction::class)->execute($new);
 
-        $this->assertStringContainsString('/001/', $first->fresh()->payload_data['nomor_surat']);
-        $this->assertStringContainsString('/002/', $rejected->fresh()->payload_data['nomor_surat']);
-        $this->assertStringContainsString('/003/', $new->fresh()->payload_data['nomor_surat']);
+        $this->assertStringStartsWith('001/', $first->fresh()->payload_data['nomor_surat']);
+        $this->assertStringStartsWith('002/', $rejected->fresh()->payload_data['nomor_surat']);
+        $this->assertStringStartsWith('003/', $new->fresh()->payload_data['nomor_surat']);
+    }
+
+    public function test_roman_month_conversion_for_all_twelve_months(): void
+    {
+        $expectedMap = [
+            1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV',
+            5 => 'V', 6 => 'VI', 7 => 'VII', 8 => 'VIII',
+            9 => 'IX', 10 => 'X', 11 => 'XI', 12 => 'XII',
+        ];
+
+        foreach ($expectedMap as $month => $roman) {
+            $this->assertSame($roman, AssignNomorSuratAction::toRomanMonth($month));
+        }
+
+        $this->assertSame('I', AssignNomorSuratAction::toRomanMonth(0));
+        $this->assertSame('I', AssignNomorSuratAction::toRomanMonth(13));
     }
 }
