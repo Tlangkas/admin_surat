@@ -11,6 +11,7 @@ use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
@@ -53,6 +54,7 @@ class SchoolSettingsPage extends Page implements HasForms
     public ?array $data = [];
 
     // Dedicated Livewire properties untuk koordinat visual studio
+    public bool $has_logo_kanan = false;
     public int $logo_width = 75;
     public int $logo_offset_x = 0;
     public int $logo_offset_y = 0;
@@ -65,11 +67,17 @@ class SchoolSettingsPage extends Page implements HasForms
 
     public int $kop_gap = 10;
 
+    public function updatedHasLogoKanan(mixed $value): void
+    {
+        $this->data['has_logo_kanan'] = (bool) $value;
+    }
+
     public function mount(): void
     {
         $settings = SchoolSettings::getInstance();
         $this->form->fill($settings->toArray());
 
+        $this->has_logo_kanan = (bool) ($settings->has_logo_kanan ?? false);
         $this->logo_width = (int) ($settings->logo_width ?? 75);
         $this->logo_offset_x = (int) ($settings->logo_offset_x ?? 0);
         $this->logo_offset_y = (int) ($settings->logo_offset_y ?? 0);
@@ -186,6 +194,15 @@ class SchoolSettingsPage extends Page implements HasForms
                 Section::make('Upload Berkas Logo')
                     ->description('Unggah berkas logo sekolah di bawah ini. Anda dapat mengatur ukuran dan posisi secara visual langsung pada kanvas di atas.')
                     ->schema([
+                        Toggle::make('has_logo_kanan')
+                            ->label('Gunakan Logo Sekunder (Kanan)')
+                            ->helperText('Aktifkan jika kop surat memiliki logo kedua di sisi kanan. Jika dinonaktifkan, kop surat hanya memakai 1 logo utama di kiri.')
+                            ->live()
+                            ->afterStateUpdated(function ($state): void {
+                                $this->has_logo_kanan = (bool) $state;
+                            })
+                            ->columnSpanFull(),
+
                         FileUpload::make('logo_path')
                             ->label('Logo Utama (Kiri)')
                             ->image()
@@ -197,14 +214,15 @@ class SchoolSettingsPage extends Page implements HasForms
                             ->helperText('Format: PNG/JPG (Transparan disarankan).'),
 
                         FileUpload::make('logo_kanan_path')
-                            ->label('Logo Sekunder (Kanan - Opsional)')
+                            ->label('Logo Sekunder (Kanan)')
                             ->image()
                             ->disk('public')
                             ->directory('school-settings')
                             ->visibility('public')
                             ->maxSize(1024)
                             ->imagePreviewHeight('90')
-                            ->helperText('Kosongkan jika hanya memakai 1 logo kiri.'),
+                            ->helperText('Format: PNG/JPG (Transparan disarankan).')
+                            ->visible(fn ($get): bool => (bool) ($get('has_logo_kanan') ?? $this->has_logo_kanan)),
                     ])->columns(2),
 
                 Section::make('Tanda Tangan & Pejabat Sekolah')
@@ -278,6 +296,7 @@ class SchoolSettingsPage extends Page implements HasForms
         $formData = $this->form->getState();
 
         $payload = array_merge($formData, [
+            'has_logo_kanan' => $this->has_logo_kanan,
             'logo_width' => $this->logo_width,
             'logo_offset_x' => $this->logo_offset_x,
             'logo_offset_y' => $this->logo_offset_y,

@@ -44,6 +44,7 @@ class SchoolSettings extends Model
         'logo_kanan_offset_x',
         'logo_kanan_offset_y',
         'logo_kanan_valign',
+        'has_logo_kanan',
         'kop_gap',
         'ttd_kepsek_path',
         'verification_base_url',
@@ -53,6 +54,7 @@ class SchoolSettings extends Model
     {
         return [
             'starting_letter_number' => 'integer',
+            'has_logo_kanan' => 'boolean',
             'logo_width' => 'integer',
             'logo_offset_x' => 'integer',
             'logo_offset_y' => 'integer',
@@ -112,6 +114,7 @@ class SchoolSettings extends Model
             'logo_kanan_offset_x' => 0,
             'logo_kanan_offset_y' => 0,
             'logo_kanan_valign' => 'middle',
+            'has_logo_kanan' => false,
             'kop_gap' => 10,
         ]);
 

@@ -148,7 +148,7 @@
 <body>
     @php
         $hasLogoKiri = !empty($settings->getLogoBase64());
-        $hasLogoKanan = !empty($settings->getLogoKananBase64());
+        $useLogoKanan = !empty($settings->has_logo_kanan) && !empty($settings->getLogoKananBase64());
         
         $logoWidth = (int) ($settings->logo_width ?? 85);
         $logoKananWidth = (int) ($settings->logo_kanan_width ?? 85);
@@ -162,11 +162,16 @@
         $logoKananOffsetX = (int) ($settings->logo_kanan_offset_x ?? 0);
         $logoKananOffsetY = (int) ($settings->logo_kanan_offset_y ?? 0);
 
-        // Lebar kolom samping simetris agar teks berada tepat 100% di tengah halaman
-        $sideWidth = max($hasLogoKiri ? $logoWidth : 0, $hasLogoKanan ? $logoKananWidth : 0) + $kopGap;
+        // Jika menggunakan 2 logo, hitung lebar samping simetris agar teks berada di tengah kedua logo.
+        // Jika hanya 1 logo utama, kolom kiri selebar logo utama + gap, dan tanpa kolom kanan.
+        if ($useLogoKanan) {
+            $sideWidth = max($hasLogoKiri ? $logoWidth : 0, $logoKananWidth) + $kopGap;
+        } else {
+            $sideWidth = ($hasLogoKiri ? $logoWidth : 0) + $kopGap;
+        }
     @endphp
 
-    {{-- Kop Surat Resmi Standar Instansi Pendidikan (Tabel Presisi Senter Simetris) --}}
+    {{-- Kop Surat Resmi Standar Instansi Pendidikan --}}
     <table class="kop-table">
         <tr>
             {{-- Kolom Kiri: Logo Utama --}}
@@ -180,7 +185,7 @@
                 @endif
             </td>
 
-            {{-- Kolom Tengah: Teks Instansi Kop Surat (100% Senter Halaman) --}}
+            {{-- Kolom Tengah: Teks Instansi Kop Surat --}}
             <td class="kop-text">
                 <h3>{{ $settings->kop_line_1 ?? 'PEMERINTAH KOTA SURAKARTA' }}</h3>
                 <h2>{{ $settings->kop_line_2 ?? 'DINAS PENDIDIKAN' }}</h2>
@@ -189,16 +194,16 @@
                 <p>{{ implode(' | ', array_filter([$settings->kontak_lengkap, $settings->npsn ? ('NPSN: ' . $settings->npsn) : null, $settings->formatted_akreditasi])) }}</p>
             </td>
 
-            {{-- Kolom Kanan: Logo Sekunder atau Penyeimbang Simetri --}}
-            <td style="width: {{ $sideWidth }}px; text-align: right; vertical-align: {{ $logoKananValign }};">
-                @if($hasLogoKanan)
+            @if($useLogoKanan)
+                {{-- Kolom Kanan: Logo Sekunder --}}
+                <td style="width: {{ $sideWidth }}px; text-align: right; vertical-align: {{ $logoKananValign }};">
                     <div style="margin-left: {{ $logoKananOffsetX }}px; margin-top: {{ $logoKananOffsetY }}px; float: right;">
                         <img src="{{ $settings->getLogoKananBase64() }}" 
                              alt="Logo Sekunder" 
                              style="width: {{ $logoKananWidth }}px; height: auto; display: block;">
                     </div>
-                @endif
-            </td>
+                </td>
+            @endif
         </tr>
     </table>
 

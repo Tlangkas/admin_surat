@@ -16,6 +16,9 @@
             startOffsetX: 0,
             startOffsetY: 0,
             
+            // Status Logo Sekunder (Kanan)
+            hasLogoKanan: @entangle('has_logo_kanan').live,
+
             // Variabel Logo Diikat Langsung ke Livewire Dedicated Properties
             logoWidth: @entangle('logo_width').live,
             logoOffsetX: @entangle('logo_offset_x').live,
@@ -171,7 +174,17 @@
                     </div>
 
                     {{-- Tab Pemilih Logo & Tombol Simpan --}}
-                    <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                        {{-- Toggle Seleksi Logo Sekunder --}}
+                        <label style="display: inline-flex; align-items: center; gap: 7px; background-color: #1e293b; padding: 5px 11px; border-radius: 8px; border: 1px solid #334155; cursor: pointer; user-select: none;"
+                               title="Centang untuk mengaktifkan logo sekunder di sisi kanan kop surat">
+                            <input type="checkbox" 
+                                   x-model="hasLogoKanan" 
+                                   @change="if (!hasLogoKanan) { activeTab = 'left'; } $wire.set('has_logo_kanan', hasLogoKanan);"
+                                   style="accent-color: #0284c7; width: 14px; height: 14px; cursor: pointer;">
+                            <span style="font-size: 11.5px; font-weight: 600; color: #e2e8f0;">Logo Sekunder (Kanan)</span>
+                        </label>
+
                         <div style="display: inline-flex; background-color: #1e293b; padding: 3px; border-radius: 8px; border: 1px solid #334155; gap: 4px;">
                             <button type="button" 
                                     @click="activeTab = 'left'" 
@@ -180,6 +193,7 @@
                                 Logo Utama (Kiri)
                             </button>
                             <button type="button" 
+                                    x-show="hasLogoKanan"
                                     @click="activeTab = 'right'" 
                                     :style="activeTab === 'right' ? 'background-color: #0284c7; color: #ffffff; font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,0.3);' : 'background-color: transparent; color: #94a3b8; font-weight: 500;'"
                                     style="padding: 6px 14px; border-radius: 6px; font-size: 12px; border: none; cursor: pointer; transition: all 0.2s;">
@@ -279,7 +293,7 @@
                             {{-- Kolom Kiri: Logo Utama dengan Drag Handle --}}
                             <td style="text-align: left; background: transparent; padding: 0;"
                                 :style="{ 
-                                    width: `${Math.max(logoWidth || 85, logoKananWidth || 85) + (kopGap !== null && kopGap !== undefined && !isNaN(kopGap) ? kopGap : 10)}px`,
+                                    width: `${(hasLogoKanan ? Math.max(logoWidth || 85, logoKananWidth || 85) : (logoWidth || 85)) + (kopGap !== null && kopGap !== undefined && !isNaN(kopGap) ? kopGap : 10)}px`,
                                     verticalAlign: logoValign || 'middle' 
                                 }">
                                 <div class="group"
@@ -342,37 +356,36 @@
                                 </div>
                             </td>
 
-                            {{-- Kolom Kanan: Logo Sekunder atau Penyeimbang Simetris --}}
-                            <td style="text-align: right; background: transparent; padding: 0;"
+                            {{-- Kolom Kanan: Logo Sekunder (Hanya jika hasLogoKanan aktif) --}}
+                            <td x-show="hasLogoKanan"
+                                style="text-align: right; background: transparent; padding: 0;"
                                 :style="{ 
-                                    width: `${Math.max(logoWidth || 85, logoKananWidth || 85) + (kopGap !== null && kopGap !== undefined && !isNaN(kopGap) ? kopGap : 10)}px`,
+                                    width: `${(hasLogoKanan ? Math.max(logoWidth || 85, logoKananWidth || 85) : (logoKananWidth || 85)) + (kopGap !== null && kopGap !== undefined && !isNaN(kopGap) ? kopGap : 10)}px`,
                                     verticalAlign: logoKananValign || 'middle' 
                                 }">
-                                @if($logoKananUrl || !empty($this->data['logo_kanan_path']))
-                                    <div class="group"
-                                         style="position: relative; display: inline-block; cursor: grab; padding: 2px; border-radius: 6px;"
-                                         @mousedown="startDragRight($event)"
-                                         :style="{ transform: `translate(${logoKananOffsetX || 0}px, ${logoKananOffsetY || 0}px)` }">
-                                        
-                                        @if($logoKananUrl)
-                                            <img src="{{ $logoKananUrl }}" 
-                                                 alt="Logo Kanan" 
-                                                 draggable="false"
-                                                 style="display: block; max-width: none; pointer-events: none; user-select: none;"
-                                                 :style="{ width: `${logoKananWidth || 85}px` }">
-                                        @else
-                                            <div style="border: 2px dashed #94a3b8; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px; color: #64748b; background-color: #f8fafc;"
-                                                 :style="{ width: `${logoKananWidth || 85}px`, height: `${logoKananWidth || 85}px` }">
-                                                <span style="font-size: 10px; font-family: sans-serif; font-weight: bold;">Logo Kanan</span>
-                                            </div>
-                                        @endif
-
-                                        <div style="position: absolute; top: -26px; left: 50%; transform: translateX(-50%); background-color: #0f172a; color: #38bdf8; font-size: 10px; font-family: monospace; padding: 2px 6px; border-radius: 4px; white-space: nowrap; pointer-events: none; opacity: 0;"
-                                             class="group-hover:opacity-100 transition-opacity">
-                                            ✥ Drag <span x-text="`(${logoKananOffsetX || 0}, ${logoKananOffsetY || 0})`"></span>
+                                <div class="group"
+                                     style="position: relative; display: inline-block; cursor: grab; padding: 2px; border-radius: 6px;"
+                                     @mousedown="startDragRight($event)"
+                                     :style="{ transform: `translate(${logoKananOffsetX || 0}px, ${logoKananOffsetY || 0}px)` }">
+                                    
+                                    @if($logoKananUrl)
+                                        <img src="{{ $logoKananUrl }}" 
+                                             alt="Logo Kanan" 
+                                             draggable="false"
+                                             style="display: block; max-width: none; pointer-events: none; user-select: none;"
+                                             :style="{ width: `${logoKananWidth || 85}px` }">
+                                    @else
+                                        <div style="border: 2px dashed #94a3b8; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px; color: #64748b; background-color: #f8fafc;"
+                                             :style="{ width: `${logoKananWidth || 85}px`, height: `${logoKananWidth || 85}px` }">
+                                            <span style="font-size: 10px; font-family: sans-serif; font-weight: bold;">Logo Kanan</span>
                                         </div>
+                                    @endif
+
+                                    <div style="position: absolute; top: -26px; left: 50%; transform: translateX(-50%); background-color: #0f172a; color: #38bdf8; font-size: 10px; font-family: monospace; padding: 2px 6px; border-radius: 4px; white-space: nowrap; pointer-events: none; opacity: 0;"
+                                         class="group-hover:opacity-100 transition-opacity">
+                                        ✥ Drag <span x-text="`(${logoKananOffsetX || 0}, ${logoKananOffsetY || 0})`"></span>
                                     </div>
-                                @endif
+                                </div>
                             </td>
                         </tr>
                     </table>

@@ -43,6 +43,7 @@ class SchoolSettingsTest extends TestCase
         $this->assertSame(0, $instance->logo_offset_x);
         $this->assertSame(0, $instance->logo_offset_y);
         $this->assertSame('middle', $instance->logo_valign);
+        $this->assertFalse($instance->has_logo_kanan);
         $this->assertSame(10, $instance->kop_gap);
     }
 
@@ -54,6 +55,7 @@ class SchoolSettingsTest extends TestCase
             'logo_offset_x' => 12,
             'logo_offset_y' => -5,
             'logo_valign' => 'top',
+            'has_logo_kanan' => true,
             'logo_kanan_width' => 85,
             'logo_kanan_offset_x' => -8,
             'logo_kanan_offset_y' => 4,
@@ -66,6 +68,7 @@ class SchoolSettingsTest extends TestCase
         $this->assertSame(12, $refreshed->logo_offset_x);
         $this->assertSame(-5, $refreshed->logo_offset_y);
         $this->assertSame('top', $refreshed->logo_valign);
+        $this->assertTrue($refreshed->has_logo_kanan);
         $this->assertSame(85, $refreshed->logo_kanan_width);
         $this->assertSame(-8, $refreshed->logo_kanan_offset_x);
         $this->assertSame(4, $refreshed->logo_kanan_offset_y);
