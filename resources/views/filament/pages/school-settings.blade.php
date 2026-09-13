@@ -228,7 +228,7 @@
                             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; margin-bottom: 4px;">
                                 <span style="color: #cbd5e1; font-weight: 600;">Jarak / Celah Logo-Teks:</span>
                                 <span style="font-weight: 700; font-family: monospace; padding: 1px 6px; border-radius: 4px; background-color: #0f172a; color: #c084fc; border: 1px solid #334155; font-size: 11px;" 
-                                      x-text="`${kopGap || 10} px`">
+                                      x-text="`${kopGap !== null && kopGap !== undefined && !isNaN(kopGap) ? kopGap : 10} px`">
                                 </span>
                             </div>
                             <input type="range" min="0" max="40" step="1" x-model.number="kopGap" 
@@ -279,7 +279,7 @@
                             {{-- Kolom Kiri: Logo Utama dengan Drag Handle --}}
                             <td style="text-align: left; background: transparent; padding: 0;"
                                 :style="{ 
-                                    width: `${Math.max(logoWidth || 85, logoKananWidth || 85) + (kopGap || 10)}px`,
+                                    width: `${Math.max(logoWidth || 85, logoKananWidth || 85) + (kopGap !== null && kopGap !== undefined && !isNaN(kopGap) ? kopGap : 10)}px`,
                                     verticalAlign: logoValign || 'middle' 
                                 }">
                                 <div class="group"
@@ -345,7 +345,7 @@
                             {{-- Kolom Kanan: Logo Sekunder atau Penyeimbang Simetris --}}
                             <td style="text-align: right; background: transparent; padding: 0;"
                                 :style="{ 
-                                    width: `${Math.max(logoWidth || 85, logoKananWidth || 85) + (kopGap || 10)}px`,
+                                    width: `${Math.max(logoWidth || 85, logoKananWidth || 85) + (kopGap !== null && kopGap !== undefined && !isNaN(kopGap) ? kopGap : 10)}px`,
                                     verticalAlign: logoKananValign || 'middle' 
                                 }">
                                 @if($logoKananUrl || !empty($this->data['logo_kanan_path']))
