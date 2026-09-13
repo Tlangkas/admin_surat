@@ -43,7 +43,8 @@ class KaryawanImportTest extends TestCase
         $this->assertContains('unique:karyawan,nip', $rules['nip']);
         $this->assertContains('max:30', $rules['nip']);
 
-        $this->assertContains('required', $rules['jabatan']);
+        $this->assertContains('nullable', $rules['jabatan']);
+        $this->assertNotContains('required', $rules['jabatan']);
         $this->assertContains('string', $rules['jabatan']);
         $this->assertContains('max:255', $rules['jabatan']);
     }
@@ -57,6 +58,24 @@ class KaryawanImportTest extends TestCase
         $this->assertSame('Kolom Nama harus diisi.', $messages['nama.required']);
         $this->assertSame('Kolom NIP harus diisi.', $messages['nip.required']);
         $this->assertSame('NIP :input sudah terdaftar.', $messages['nip.unique']);
-        $this->assertSame('Kolom Jabatan harus diisi.', $messages['jabatan.required']);
+        $this->assertArrayNotHasKey('jabatan.required', $messages);
+    }
+
+    public function test_model_maps_row_without_jabatan_to_null(): void
+    {
+        $import = new KaryawanImport();
+
+        $karyawanWithoutJabatan = $import->model([
+            'nama' => 'Ahmad Dahlan',
+            'nip' => '198001012005011002',
+        ]);
+        $this->assertNull($karyawanWithoutJabatan->jabatan);
+
+        $karyawanWithEmptyJabatan = $import->model([
+            'nama' => 'Siti Aminah',
+            'nip' => '198202022006022001',
+            'jabatan' => '   ',
+        ]);
+        $this->assertNull($karyawanWithEmptyJabatan->jabatan);
     }
 }

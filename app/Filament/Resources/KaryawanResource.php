@@ -73,8 +73,9 @@ class KaryawanResource extends Resource
                             ->maxLength(30),
                         Forms\Components\TextInput::make('jabatan')
                             ->label('Jabatan')
-                            ->required()
-                            ->maxLength(255),
+                            ->nullable()
+                            ->maxLength(255)
+                            ->placeholder('Contoh: Guru Mata Pelajaran (Opsional)'),
                     ])
                     ->columns(['default' => 1, 'md' => 2]),
             ]);
@@ -101,6 +102,7 @@ class KaryawanResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('jabatan')
                     ->label('Jabatan')
+                    ->default('-')
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('user.email')
@@ -143,10 +145,10 @@ class KaryawanResource extends Resource
                         $headingErrors = [];
                         try {
                             $headings = (new HeadingRowImport)->toArray($file)[0][0] ?? [];
-                            $expected = ['nama', 'nip', 'jabatan'];
+                            $expected = ['nama', 'nip'];
                             $missing = array_diff($expected, array_map('strtolower', $headings));
                             if (! empty($missing)) {
-                                $headingErrors[] = 'Format kolom tidak sesuai. Pastikan ada kolom: Nama, NIP, Jabatan.';
+                                $headingErrors[] = 'Format kolom tidak sesuai. Pastikan ada kolom: Nama, NIP (kolom Jabatan bersifat opsional).';
                             }
                         } catch (\Throwable $e) {
                             $headingErrors[] = 'File tidak dapat dibaca. Pastikan format .xlsx.';

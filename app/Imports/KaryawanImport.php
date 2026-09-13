@@ -18,17 +18,21 @@ use Maatwebsite\Excel\Concerns\WithValidation;
  * Validasi:
  *   - Nama: required, string, max 255
  *   - NIP:  required, string, max 30, unique di tabel karyawan
- *   - Jabatan: required, string, max 255
+ *   - Jabatan: nullable, string, max 255 (opsional)
  */
 class KaryawanImport implements ToModel, WithHeadingRow, WithValidation
 {
     /** Petakan baris Excel ke model Karyawan. */
     public function model(array $row): Karyawan
     {
+        $jabatan = isset($row['jabatan']) && trim((string) $row['jabatan']) !== ''
+            ? trim((string) $row['jabatan'])
+            : null;
+
         return new Karyawan([
-            'nama' => $row['nama'],
-            'nip' => (string) $row['nip'],
-            'jabatan' => $row['jabatan'],
+            'nama' => trim((string) $row['nama']),
+            'nip' => trim((string) $row['nip']),
+            'jabatan' => $jabatan,
         ]);
     }
 
@@ -38,7 +42,7 @@ class KaryawanImport implements ToModel, WithHeadingRow, WithValidation
         return [
             'nama' => ['required', 'string', 'max:255'],
             'nip' => ['required', 'string', 'max:30', 'unique:karyawan,nip'],
-            'jabatan' => ['required', 'string', 'max:255'],
+            'jabatan' => ['nullable', 'string', 'max:255'],
         ];
     }
 
@@ -49,7 +53,6 @@ class KaryawanImport implements ToModel, WithHeadingRow, WithValidation
             'nama.required' => 'Kolom Nama harus diisi.',
             'nip.required' => 'Kolom NIP harus diisi.',
             'nip.unique' => 'NIP :input sudah terdaftar.',
-            'jabatan.required' => 'Kolom Jabatan harus diisi.',
         ];
     }
 }

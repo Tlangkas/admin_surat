@@ -73,7 +73,8 @@ class RegisterGukar extends Register
                                         return;
                                     }
 
-                                    $set('verified_karyawan_info', "✅ Data Ditemukan: {$karyawan->nama} ({$karyawan->jabatan})");
+                                    $jabatanText = ! empty($karyawan->jabatan) ? " ({$karyawan->jabatan})" : '';
+                                    $set('verified_karyawan_info', "✅ Data Ditemukan: {$karyawan->nama}{$jabatanText}");
                                 }),
 
                             Forms\Components\Placeholder::make('verified_karyawan_info')
@@ -119,7 +120,9 @@ class RegisterGukar extends Register
                                         return 'Mohon selesaikan Tahap 1 (Validasi NIP).';
                                     }
 
-                                    return "Nama: {$karyawan->nama}\nNIP: {$karyawan->nip}\nJabatan: {$karyawan->jabatan}\nEmail Akun: {$email}";
+                                    $jabatanVal = ! empty($karyawan->jabatan) ? $karyawan->jabatan : '-';
+
+                                    return "Nama: {$karyawan->nama}\nNIP: {$karyawan->nip}\nJabatan: {$jabatanVal}\nEmail Akun: {$email}";
                                 }),
                         ]),
                 ])
