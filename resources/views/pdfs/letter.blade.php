@@ -30,6 +30,12 @@
             padding: 0;
         }
 
+        .kop-container {
+            position: relative;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+
         .kop-text {
             text-align: center;
             vertical-align: middle;
@@ -163,38 +169,33 @@
         $logoKananOffsetY = (int) ($settings->logo_kanan_offset_y ?? 0);
 
         // Jika menggunakan 2 logo, hitung lebar samping simetris agar teks berada di tengah kedua logo.
-        // Jika hanya 1 logo utama, kolom kiri selebar logo utama + gap, dan tanpa kolom kanan.
-        if ($useLogoKanan) {
-            $sideWidth = max($hasLogoKiri ? $logoWidth : 0, $logoKananWidth) + $kopGap;
-        } else {
-            $sideWidth = ($hasLogoKiri ? $logoWidth : 0) + $kopGap;
-        }
+        $sideWidth = max($hasLogoKiri ? $logoWidth : 0, $logoKananWidth) + $kopGap;
     @endphp
 
-    {{-- Kop Surat Resmi Standar Instansi Pendidikan --}}
-    <table class="kop-table">
-        <tr>
-            {{-- Kolom Kiri: Logo Utama --}}
-            <td style="width: {{ $sideWidth }}px; text-align: left; vertical-align: {{ $logoValign }};">
-                @if($hasLogoKiri)
-                    <div style="margin-left: {{ $logoOffsetX }}px; margin-top: {{ $logoOffsetY }}px;">
-                        <img src="{{ $settings->getLogoBase64() }}" 
-                             alt="Logo Utama" 
-                             style="width: {{ $logoWidth }}px; height: auto; display: block;">
-                    </div>
-                @endif
-            </td>
+    @if($useLogoKanan)
+        {{-- Kop Surat 2 Logo (Simetris Samping Kiri & Kanan) --}}
+        <table class="kop-table">
+            <tr>
+                {{-- Kolom Kiri: Logo Utama --}}
+                <td style="width: {{ $sideWidth }}px; text-align: left; vertical-align: {{ $logoValign }};">
+                    @if($hasLogoKiri)
+                        <div style="margin-left: {{ $logoOffsetX }}px; margin-top: {{ $logoOffsetY }}px;">
+                            <img src="{{ $settings->getLogoBase64() }}" 
+                                 alt="Logo Utama" 
+                                 style="width: {{ $logoWidth }}px; height: auto; display: block;">
+                        </div>
+                    @endif
+                </td>
 
-            {{-- Kolom Tengah: Teks Instansi Kop Surat --}}
-            <td class="kop-text">
-                <h3>{{ $settings->kop_line_1 ?? 'PEMERINTAH KOTA SURAKARTA' }}</h3>
-                <h2>{{ $settings->kop_line_2 ?? 'DINAS PENDIDIKAN' }}</h2>
-                <h1>{{ strtoupper($settings->nama_sekolah ?? 'SD NEGERI 1 SURAKARTA') }}</h1>
-                <p>{{ $settings->alamat_lengkap ?? $settings->alamat }}</p>
-                <p>{{ implode(' | ', array_filter([$settings->kontak_lengkap, $settings->npsn ? ('NPSN: ' . $settings->npsn) : null, $settings->formatted_akreditasi])) }}</p>
-            </td>
+                {{-- Kolom Tengah: Teks Instansi Kop Surat --}}
+                <td class="kop-text">
+                    <h3>{{ $settings->kop_line_1 ?? 'PEMERINTAH KOTA SURAKARTA' }}</h3>
+                    <h2>{{ $settings->kop_line_2 ?? 'DINAS PENDIDIKAN' }}</h2>
+                    <h1>{{ strtoupper($settings->nama_sekolah ?? 'SD NEGERI 1 SURAKARTA') }}</h1>
+                    <p>{{ $settings->alamat_lengkap ?? $settings->alamat }}</p>
+                    <p>{{ implode(' | ', array_filter([$settings->kontak_lengkap, $settings->npsn ? ('NPSN: ' . $settings->npsn) : null, $settings->formatted_akreditasi])) }}</p>
+                </td>
 
-            @if($useLogoKanan)
                 {{-- Kolom Kanan: Logo Sekunder --}}
                 <td style="width: {{ $sideWidth }}px; text-align: right; vertical-align: {{ $logoKananValign }};">
                     <div style="margin-left: {{ $logoKananOffsetX }}px; margin-top: {{ $logoKananOffsetY }}px; float: right;">
@@ -203,9 +204,36 @@
                              style="width: {{ $logoKananWidth }}px; height: auto; display: block;">
                     </div>
                 </td>
+            </tr>
+        </table>
+    @else
+        {{-- Kop Surat 1 Logo (100% Senter Presisi Kertas Murni) --}}
+        <div class="kop-container" style="min-height: {{ $hasLogoKiri ? $logoWidth : 0 }}px;">
+            @if($hasLogoKiri)
+                @php
+                    $topVal = $logoOffsetY . 'px';
+                    if ($logoValign === 'middle') {
+                        $topVal = (max(0, (85 - $logoWidth) / 2) + $logoOffsetY) . 'px';
+                    } elseif ($logoValign === 'bottom') {
+                        $topVal = (max(0, 85 - $logoWidth) + $logoOffsetY) . 'px';
+                    }
+                @endphp
+                <div style="position: absolute; left: {{ $logoOffsetX }}px; top: {{ $topVal }}; width: {{ $logoWidth }}px;">
+                    <img src="{{ $settings->getLogoBase64() }}" 
+                         alt="Logo Utama" 
+                         style="width: {{ $logoWidth }}px; height: auto; display: block;">
+                </div>
             @endif
-        </tr>
-    </table>
+
+            <div class="kop-text" style="width: 100%;">
+                <h3>{{ $settings->kop_line_1 ?? 'PEMERINTAH KOTA SURAKARTA' }}</h3>
+                <h2>{{ $settings->kop_line_2 ?? 'DINAS PENDIDIKAN' }}</h2>
+                <h1>{{ strtoupper($settings->nama_sekolah ?? 'SD NEGERI 1 SURAKARTA') }}</h1>
+                <p>{{ $settings->alamat_lengkap ?? $settings->alamat }}</p>
+                <p>{{ implode(' | ', array_filter([$settings->kontak_lengkap, $settings->npsn ? ('NPSN: ' . $settings->npsn) : null, $settings->formatted_akreditasi])) }}</p>
+            </div>
+        </div>
+    @endif
 
     <hr class="header-divider">
 

@@ -287,86 +287,90 @@
             <div style="background-color: #0b1120; padding: 28px 20px; display: flex; justify-content: center; overflow-x: auto;">
                 <div style="width: 100%; max-width: 820px; background-color: #ffffff !important; color: #000000 !important; padding: 32px 40px; border-radius: 6px; box-shadow: 0 15px 35px -5px rgba(0,0,0,0.4); border: 1px solid #e2e8f0; font-family: 'Times New Roman', Times, serif; user-select: none;">
                     
-                    {{-- Tabel Kop Surat Simetris Standar Instansi Pendidikan (100% Senter Presisi) --}}
-                    <table style="width: 100%; border-collapse: collapse; background: transparent; color: #000000 !important;">
-                        <tr>
-                            {{-- Kolom Kiri: Logo Utama dengan Drag Handle --}}
-                            <td style="text-align: left; background: transparent; padding: 0;"
-                                :style="{ 
-                                    width: `${(hasLogoKanan ? Math.max(logoWidth || 85, logoKananWidth || 85) : (logoWidth || 85)) + (kopGap !== null && kopGap !== undefined && !isNaN(kopGap) ? kopGap : 10)}px`,
-                                    verticalAlign: logoValign || 'middle' 
-                                }">
-                                <div class="group"
-                                     style="position: relative; display: inline-block; cursor: grab; padding: 2px; border-radius: 6px;"
-                                     @mousedown="startDragLeft($event)"
-                                     :style="{ transform: `translate(${logoOffsetX || 0}px, ${logoOffsetY || 0}px)` }">
-                                    
-                                    @if($logoUtamaUrl)
-                                        <img src="{{ $logoUtamaUrl }}" 
-                                             alt="Logo Kiri" 
-                                             draggable="false"
-                                             style="display: block; max-width: none; pointer-events: none; user-select: none;"
-                                             :style="{ width: `${logoWidth || 85}px` }">
-                                    @else
-                                        <div style="border: 2px dashed #94a3b8; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px; color: #64748b; background-color: #f8fafc;"
-                                             :style="{ width: `${logoWidth || 85}px`, height: `${logoWidth || 85}px` }">
-                                            <span style="font-size: 10px; font-family: sans-serif; font-weight: bold;">Logo Kiri</span>
-                                        </div>
-                                    @endif
-
-                                    {{-- Tooltip Geser --}}
-                                    <div style="position: absolute; top: -26px; left: 50%; transform: translateX(-50%); background-color: #0f172a; color: #38bdf8; font-size: 10px; font-family: monospace; padding: 2px 6px; border-radius: 4px; white-space: nowrap; pointer-events: none; opacity: 0;"
-                                         class="group-hover:opacity-100 transition-opacity">
-                                        ✥ Drag <span x-text="`(${logoOffsetX || 0}, ${logoOffsetY || 0})`"></span>
+                    {{-- Kop Surat Simetris Standar Instansi Pendidikan (100% Senter Presisi Kertas) --}}
+                    <div style="position: relative; width: 100%; min-height: 85px; color: #000000 !important;">
+                        
+                        {{-- Logo Utama (Kiri) dengan Drag Handle --}}
+                        <div style="position: absolute; left: 0; z-index: 10;"
+                             :style="{ 
+                                 top: (logoValign === 'top' ? '0px' : (logoValign === 'bottom' ? 'auto' : '50%')),
+                                 bottom: (logoValign === 'bottom' ? '0px' : 'auto'),
+                                 transform: (logoValign === 'middle' ? `translate(${logoOffsetX || 0}px, calc(-50% + ${logoOffsetY || 0}px))` : `translate(${logoOffsetX || 0}px, ${logoOffsetY || 0}px)`)
+                             }">
+                            <div class="group"
+                                 style="position: relative; display: inline-block; cursor: grab; padding: 2px; border-radius: 6px;"
+                                 @mousedown="startDragLeft($event)">
+                                
+                                @if($logoUtamaUrl)
+                                    <img src="{{ $logoUtamaUrl }}" 
+                                         alt="Logo Kiri" 
+                                         draggable="false"
+                                         style="display: block; max-width: none; pointer-events: none; user-select: none;"
+                                         :style="{ width: `${logoWidth || 85}px` }">
+                                @else
+                                    <div style="border: 2px dashed #94a3b8; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px; color: #64748b; background-color: #f8fafc;"
+                                         :style="{ width: `${logoWidth || 85}px`, height: `${logoWidth || 85}px` }">
+                                        <span style="font-size: 10px; font-family: sans-serif; font-weight: bold;">Logo Kiri</span>
                                     </div>
-                                </div>
-                            </td>
+                                @endif
 
-                            {{-- Kolom Tengah: Teks Kop Surat (100% Senter Halaman Simetris) --}}
-                            <td style="text-align: center; vertical-align: middle; background: transparent; color: #000000 !important; padding: 0 4px;">
-                                <div style="font-size: 12.5px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2; color: #000000 !important; font-family: 'Times New Roman', Times, serif;"
-                                     x-text="kopLine1 || '{{ $settingsInstance->kop_line_1 ?? 'PEMERINTAH KOTA SURAKARTA' }}'">
-                                    {{ $settingsInstance->kop_line_1 ?? 'PEMERINTAH KOTA SURAKARTA' }}
+                                {{-- Tooltip Geser --}}
+                                <div style="position: absolute; top: -26px; left: 50%; transform: translateX(-50%); background-color: #0f172a; color: #38bdf8; font-size: 10px; font-family: monospace; padding: 2px 6px; border-radius: 4px; white-space: nowrap; pointer-events: none; opacity: 0;"
+                                     class="group-hover:opacity-100 transition-opacity">
+                                    ✥ Drag <span x-text="`(${logoOffsetX || 0}, ${logoOffsetY || 0})`"></span>
                                 </div>
-                                
-                                <div style="font-size: 14.5px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px; line-height: 1.2; color: #000000 !important; font-family: 'Times New Roman', Times, serif;"
-                                     x-text="kopLine2 || '{{ $settingsInstance->kop_line_2 ?? 'DINAS PENDIDIKAN' }}'">
-                                    {{ $settingsInstance->kop_line_2 ?? 'DINAS PENDIDIKAN' }}
-                                </div>
-                                
-                                <div style="font-size: 17px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; line-height: 1.2; color: #000000 !important; font-family: 'Times New Roman', Times, serif;"
-                                     x-text="namaSekolah || '{{ $settingsInstance->nama_sekolah ?? 'SEKOLAH MENENGAH ATAS NEGERI 1 CONTOH' }}'">
-                                    {{ $settingsInstance->nama_sekolah ?? 'SEKOLAH MENENGAH ATAS NEGERI 1 CONTOH' }}
-                                </div>
-                                
-                                <div style="font-size: 11px; margin-top: 3px; line-height: 1.25; color: #1e293b !important; font-family: Arial, Helvetica, sans-serif;"
-                                     x-text="(alamat || '{{ $settingsInstance->alamat ?? 'Jl. Contoh No. 123' }}') + (kodePos ? ', ' + kodePos : '{{ !empty($settingsInstance->kode_pos) ? ', ' . $settingsInstance->kode_pos : '' }}')">
-                                    {{ $settingsInstance->alamat ?? 'Jl. Contoh No. 123' }}{{ !empty($settingsInstance->kode_pos) ? ', ' . $settingsInstance->kode_pos : '' }}
-                                </div>
-                                
-                                <div style="font-size: 10.5px; margin-top: 2px; line-height: 1.25; color: #334155 !important; font-family: Arial, Helvetica, sans-serif;"
-                                     x-text="[
-                                        (telepon ? 'Telp. ' + telepon : '{{ !empty($settingsInstance->telepon) ? 'Telp. ' . $settingsInstance->telepon : '' }}'),
-                                        (email ? 'Email: ' + email : '{{ !empty($settingsInstance->email) ? 'Email: ' . $settingsInstance->email : '' }}'),
-                                        (website ? website : '{{ !empty($settingsInstance->website) ? $settingsInstance->website : '' }}'),
-                                        (npsn ? 'NPSN: ' + npsn : '{{ !empty($settingsInstance->npsn) ? 'NPSN: ' . $settingsInstance->npsn : '' }}'),
-                                        (akreditasi ? (akreditasi.toLowerCase().includes('akreditasi') ? akreditasi : 'Akreditasi: ' + akreditasi) : '{{ !empty($settingsInstance->formatted_akreditasi) ? $settingsInstance->formatted_akreditasi : '' }}')
-                                     ].filter(Boolean).join(' | ') || 'Telp. (021) 1234567 | Email: info@sekolah.sch.id | www.sekolah.sch.id'">
-                                    {{ implode(' | ', array_filter([$settingsInstance->kontak_lengkap, $settingsInstance->npsn ? ('NPSN: ' . $settingsInstance->npsn) : null, $settingsInstance->formatted_akreditasi])) ?: 'Telp. (021) 1234567 | Email: info@sekolah.sch.id | www.sekolah.sch.id' }}
-                                </div>
-                            </td>
+                            </div>
+                        </div>
 
-                            {{-- Kolom Kanan: Logo Sekunder (Hanya jika hasLogoKanan aktif) --}}
-                            <td x-show="hasLogoKanan"
-                                style="text-align: right; background: transparent; padding: 0;"
-                                :style="{ 
-                                    width: `${(hasLogoKanan ? Math.max(logoWidth || 85, logoKananWidth || 85) : (logoKananWidth || 85)) + (kopGap !== null && kopGap !== undefined && !isNaN(kopGap) ? kopGap : 10)}px`,
-                                    verticalAlign: logoKananValign || 'middle' 
-                                }">
+                        {{-- Teks Kop Surat: 100% Senter Presisi Kertas (Sejajar Sumbu Tengah Halaman) --}}
+                        <div style="width: 100%; text-align: center; margin: 0 auto; color: #000000 !important; font-family: 'Times New Roman', Times, serif;"
+                             :style="{ 
+                                 paddingLeft: hasLogoKanan ? `${Math.max(logoWidth || 85, logoKananWidth || 85) + (kopGap !== null && kopGap !== undefined && !isNaN(kopGap) ? kopGap : 10)}px` : '0px',
+                                 paddingRight: hasLogoKanan ? `${Math.max(logoWidth || 85, logoKananWidth || 85) + (kopGap !== null && kopGap !== undefined && !isNaN(kopGap) ? kopGap : 10)}px` : '0px'
+                             }">
+                            <div style="font-size: 12.5px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2; color: #000000 !important;"
+                                 x-text="kopLine1 || '{{ $settingsInstance->kop_line_1 ?? 'PEMERINTAH KOTA SURAKARTA' }}'">
+                                {{ $settingsInstance->kop_line_1 ?? 'PEMERINTAH KOTA SURAKARTA' }}
+                            </div>
+                            
+                            <div style="font-size: 14.5px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px; line-height: 1.2; color: #000000 !important;"
+                                 x-text="kopLine2 || '{{ $settingsInstance->kop_line_2 ?? 'DINAS PENDIDIKAN' }}'">
+                                {{ $settingsInstance->kop_line_2 ?? 'DINAS PENDIDIKAN' }}
+                            </div>
+                            
+                            <div style="font-size: 17px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; line-height: 1.2; color: #000000 !important;"
+                                 x-text="namaSekolah || '{{ $settingsInstance->nama_sekolah ?? 'SEKOLAH MENENGAH ATAS NEGERI 1 CONTOH' }}'">
+                                {{ $settingsInstance->nama_sekolah ?? 'SEKOLAH MENENGAH ATAS NEGERI 1 CONTOH' }}
+                            </div>
+                            
+                            <div style="font-size: 11px; margin-top: 3px; line-height: 1.25; color: #1e293b !important; font-family: Arial, Helvetica, sans-serif;"
+                                 x-text="(alamat || '{{ $settingsInstance->alamat ?? 'Jl. Contoh No. 123' }}') + (kodePos ? ', ' + kodePos : '{{ !empty($settingsInstance->kode_pos) ? ', ' . $settingsInstance->kode_pos : '' }}')">
+                                {{ $settingsInstance->alamat ?? 'Jl. Contoh No. 123' }}{{ !empty($settingsInstance->kode_pos) ? ', ' . $settingsInstance->kode_pos : '' }}
+                            </div>
+                            
+                            <div style="font-size: 10.5px; margin-top: 2px; line-height: 1.25; color: #334155 !important; font-family: Arial, Helvetica, sans-serif;"
+                                 x-text="[
+                                    (telepon ? 'Telp. ' + telepon : '{{ !empty($settingsInstance->telepon) ? 'Telp. ' . $settingsInstance->telepon : '' }}'),
+                                    (email ? 'Email: ' + email : '{{ !empty($settingsInstance->email) ? 'Email: ' . $settingsInstance->email : '' }}'),
+                                    (website ? website : '{{ !empty($settingsInstance->website) ? $settingsInstance->website : '' }}'),
+                                    (npsn ? 'NPSN: ' + npsn : '{{ !empty($settingsInstance->npsn) ? 'NPSN: ' . $settingsInstance->npsn : '' }}'),
+                                    (akreditasi ? (akreditasi.toLowerCase().includes('akreditasi') ? akreditasi : 'Akreditasi: ' + akreditasi) : '{{ !empty($settingsInstance->formatted_akreditasi) ? $settingsInstance->formatted_akreditasi : '' }}')
+                                 ].filter(Boolean).join(' | ') || 'Telp. (021) 1234567 | Email: info@sekolah.sch.id | www.sekolah.sch.id'">
+                                {{ implode(' | ', array_filter([$settingsInstance->kontak_lengkap, $settingsInstance->npsn ? ('NPSN: ' . $settingsInstance->npsn) : null, $settingsInstance->formatted_akreditasi])) ?: 'Telp. (021) 1234567 | Email: info@sekolah.sch.id | www.sekolah.sch.id' }}
+                            </div>
+                        </div>
+
+                        {{-- Logo Sekunder (Kanan) --}}
+                        <template x-if="hasLogoKanan">
+                            <div style="position: absolute; right: 0; z-index: 10;"
+                                 :style="{ 
+                                     top: (logoKananValign === 'top' ? '0px' : (logoKananValign === 'bottom' ? 'auto' : '50%')),
+                                     bottom: (logoKananValign === 'bottom' ? '0px' : 'auto'),
+                                     transform: (logoKananValign === 'middle' ? `translate(${logoKananOffsetX || 0}px, calc(-50% + ${logoKananOffsetY || 0}px))` : `translate(${logoKananOffsetX || 0}px, ${logoKananOffsetY || 0}px)`)
+                                 }">
                                 <div class="group"
                                      style="position: relative; display: inline-block; cursor: grab; padding: 2px; border-radius: 6px;"
-                                     @mousedown="startDragRight($event)"
-                                     :style="{ transform: `translate(${logoKananOffsetX || 0}px, ${logoKananOffsetY || 0}px)` }">
+                                     @mousedown="startDragRight($event)">
                                     
                                     @if($logoKananUrl)
                                         <img src="{{ $logoKananUrl }}" 
@@ -386,9 +390,9 @@
                                         ✥ Drag <span x-text="`(${logoKananOffsetX || 0}, ${logoKananOffsetY || 0})`"></span>
                                     </div>
                                 </div>
-                            </td>
-                        </tr>
-                    </table>
+                            </div>
+                        </template>
+                    </div>
 
                     {{-- Garis Pembatas Ganda Kop Surat --}}
                     <div style="margin-top: 10px; border-top: 3px double #000000; padding-top: 2px; width: 100%;"></div>
