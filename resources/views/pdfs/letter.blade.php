@@ -23,7 +23,7 @@
         .kop-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 5px;
+            margin-bottom: 0;
         }
 
         .kop-table td {
@@ -33,7 +33,7 @@
         .kop-container {
             position: relative;
             width: 100%;
-            margin-bottom: 5px;
+            margin-bottom: 0;
         }
 
         .kop-text {
@@ -41,8 +41,9 @@
             vertical-align: middle;
         }
 
+        .kop-text .kop-line-1,
         .kop-text h3 {
-            font-size: 11pt;
+            font-size: 9.5pt;
             font-weight: bold;
             margin: 0;
             text-transform: uppercase;
@@ -50,35 +51,55 @@
             line-height: 1.2;
         }
 
+        .kop-text .kop-line-2,
         .kop-text h2 {
-            font-size: 12.5pt;
+            font-size: 11pt;
             font-weight: bold;
-            margin: 2px 0;
+            margin: 2px 0 0 0;
             text-transform: uppercase;
             letter-spacing: 0.8px;
             line-height: 1.2;
         }
 
+        .kop-text .kop-line-3,
         .kop-text h1 {
-            font-size: 14pt;
+            font-size: 13pt;
             font-weight: bold;
-            margin: 2px 0;
+            margin: 2px 0 0 0;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             line-height: 1.2;
         }
 
-        .kop-text p {
+        .kop-text .kop-line-4,
+        .kop-text p.kop-alamat {
             font-size: 8.5pt;
-            margin: 1px 0;
+            margin: 3px 0 0 0;
             line-height: 1.25;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .kop-text .kop-line-5,
+        .kop-text p.kop-kontak {
+            font-size: 8pt;
+            margin: 2px 0 0 0;
+            line-height: 1.25;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .kop-text p {
+            margin-bottom: 0;
         }
 
         .header-divider {
+            height: 0;
+            line-height: 0;
+            font-size: 0;
             border: none;
             border-top: 3px double #000;
             margin-top: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 18px;
+            clear: both;
         }
 
         /* Body Content */
@@ -189,11 +210,11 @@
 
                 {{-- Kolom Tengah: Teks Instansi Kop Surat --}}
                 <td class="kop-text">
-                    <h3>{{ $settings->kop_line_1 ?? 'PEMERINTAH KOTA SURAKARTA' }}</h3>
-                    <h2>{{ $settings->kop_line_2 ?? 'DINAS PENDIDIKAN' }}</h2>
-                    <h1>{{ strtoupper($settings->nama_sekolah ?? 'SD NEGERI 1 SURAKARTA') }}</h1>
-                    <p>{{ $settings->alamat_lengkap ?? $settings->alamat }}</p>
-                    <p>{{ implode(' | ', array_filter([$settings->kontak_lengkap, $settings->npsn ? ('NPSN: ' . $settings->npsn) : null, $settings->formatted_akreditasi])) }}</p>
+                    <div class="kop-line-1">{{ $settings->kop_line_1 ?? 'PEMERINTAH KOTA SURAKARTA' }}</div>
+                    <div class="kop-line-2">{{ $settings->kop_line_2 ?? 'DINAS PENDIDIKAN' }}</div>
+                    <div class="kop-line-3">{{ strtoupper($settings->nama_sekolah ?? 'SD NEGERI 1 SURAKARTA') }}</div>
+                    <div class="kop-line-4">{{ $settings->alamat_lengkap ?? $settings->alamat }}</div>
+                    <div class="kop-line-5">{{ implode(' | ', array_filter([$settings->kontak_lengkap, $settings->npsn ? ('NPSN: ' . $settings->npsn) : null, $settings->formatted_akreditasi])) }}</div>
                 </td>
 
                 {{-- Kolom Kanan: Logo Sekunder --}}
@@ -208,14 +229,14 @@
         </table>
     @else
         {{-- Kop Surat 1 Logo (100% Senter Presisi Kertas Murni) --}}
-        <div class="kop-container" style="min-height: {{ $hasLogoKiri ? $logoWidth : 0 }}px;">
+        <div class="kop-container">
             @if($hasLogoKiri)
                 @php
                     $topVal = $logoOffsetY . 'px';
                     if ($logoValign === 'middle') {
-                        $topVal = (max(0, (85 - $logoWidth) / 2) + $logoOffsetY) . 'px';
+                        $topVal = (round((85 - $logoWidth) / 2) + $logoOffsetY) . 'px';
                     } elseif ($logoValign === 'bottom') {
-                        $topVal = (max(0, 85 - $logoWidth) + $logoOffsetY) . 'px';
+                        $topVal = ((85 - $logoWidth) + $logoOffsetY) . 'px';
                     }
                 @endphp
                 <div style="position: absolute; left: {{ $logoOffsetX }}px; top: {{ $topVal }}; width: {{ $logoWidth }}px;">
@@ -226,16 +247,16 @@
             @endif
 
             <div class="kop-text" style="width: 100%;">
-                <h3>{{ $settings->kop_line_1 ?? 'PEMERINTAH KOTA SURAKARTA' }}</h3>
-                <h2>{{ $settings->kop_line_2 ?? 'DINAS PENDIDIKAN' }}</h2>
-                <h1>{{ strtoupper($settings->nama_sekolah ?? 'SD NEGERI 1 SURAKARTA') }}</h1>
-                <p>{{ $settings->alamat_lengkap ?? $settings->alamat }}</p>
-                <p>{{ implode(' | ', array_filter([$settings->kontak_lengkap, $settings->npsn ? ('NPSN: ' . $settings->npsn) : null, $settings->formatted_akreditasi])) }}</p>
+                <div class="kop-line-1">{{ $settings->kop_line_1 ?? 'PEMERINTAH KOTA SURAKARTA' }}</div>
+                <div class="kop-line-2">{{ $settings->kop_line_2 ?? 'DINAS PENDIDIKAN' }}</div>
+                <div class="kop-line-3">{{ strtoupper($settings->nama_sekolah ?? 'SD NEGERI 1 SURAKARTA') }}</div>
+                <div class="kop-line-4">{{ $settings->alamat_lengkap ?? $settings->alamat }}</div>
+                <div class="kop-line-5">{{ implode(' | ', array_filter([$settings->kontak_lengkap, $settings->npsn ? ('NPSN: ' . $settings->npsn) : null, $settings->formatted_akreditasi])) }}</div>
             </div>
         </div>
     @endif
 
-    <hr class="header-divider">
+    <div class="header-divider"></div>
 
     {{-- Konten Surat --}}
     <div class="content">
