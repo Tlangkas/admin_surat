@@ -74,6 +74,18 @@
                 $wire.set('kop_gap', gap);
             },
 
+            getSideWidth() {
+                const gap = (this.kopGap !== null && this.kopGap !== undefined && !isNaN(this.kopGap)) ? parseInt(this.kopGap) : 10;
+                const leftW = parseInt(this.logoWidth || 85) + Math.max(0, parseInt(this.logoOffsetX || 0));
+                
+                if (this.hasLogoKanan) {
+                    const rightW = parseInt(this.logoKananWidth || 85) + Math.max(0, -parseInt(this.logoKananOffsetX || 0));
+                    return Math.max(leftW, rightW) + gap;
+                }
+                
+                return leftW + gap;
+            },
+
             resetPositions() {
                 if (this.activeTab === 'left') {
                     this.logoWidth = 85;
@@ -245,7 +257,7 @@
                                       x-text="`${kopGap !== null && kopGap !== undefined && !isNaN(kopGap) ? kopGap : 10} px`">
                                 </span>
                             </div>
-                            <input type="range" min="0" max="40" step="1" x-model.number="kopGap" 
+                            <input type="range" min="0" max="60" step="1" x-model.number="kopGap" 
                                    @input="$wire.set('kop_gap', kopGap)"
                                    style="width: 100%; accent-color: #c084fc; cursor: pointer; height: 5px;">
                         </div>
@@ -323,10 +335,10 @@
                         </div>
 
                         {{-- Teks Kop Surat: 100% Senter Presisi Kertas (Sejajar Sumbu Tengah Halaman) --}}
-                        <div style="width: 100%; text-align: center; margin: 0 auto; color: #000000 !important; font-family: 'Times New Roman', Times, serif;"
+                        <div style="width: 100%; text-align: center; margin: 0 auto; color: #000000 !important; font-family: 'Times New Roman', Times, serif; box-sizing: border-box;"
                              :style="{ 
-                                 paddingLeft: hasLogoKanan ? `${Math.max(logoWidth || 85, logoKananWidth || 85) + (kopGap !== null && kopGap !== undefined && !isNaN(kopGap) ? kopGap : 10)}px` : '0px',
-                                 paddingRight: hasLogoKanan ? `${Math.max(logoWidth || 85, logoKananWidth || 85) + (kopGap !== null && kopGap !== undefined && !isNaN(kopGap) ? kopGap : 10)}px` : '0px'
+                                 paddingLeft: `${getSideWidth()}px`,
+                                 paddingRight: `${getSideWidth()}px`
                              }">
                             <div style="font-size: 12.5px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2; color: #000000 !important;"
                                  x-text="kopLine1 || '{{ $settingsInstance->kop_line_1 ?? 'PEMERINTAH KOTA SURAKARTA' }}'">

@@ -34,11 +34,13 @@
             position: relative;
             width: 100%;
             margin-bottom: 0;
+            box-sizing: border-box;
         }
 
         .kop-text {
             text-align: center;
             vertical-align: middle;
+            box-sizing: border-box;
         }
 
         .kop-text .kop-line-1,
@@ -189,8 +191,10 @@
         $logoKananOffsetX = (int) ($settings->logo_kanan_offset_x ?? 0);
         $logoKananOffsetY = (int) ($settings->logo_kanan_offset_y ?? 0);
 
-        // Jika menggunakan 2 logo, hitung lebar samping simetris agar teks berada di tengah kedua logo.
-        $sideWidth = max($hasLogoKiri ? $logoWidth : 0, $logoKananWidth) + $kopGap;
+        // Hitung lebar samping simetris (logo + jarak gap) agar teks berada di tengah dan tidak bertabrakan dengan logo
+        $leftSideWidth = $hasLogoKiri ? ($logoWidth + max(0, $logoOffsetX) + $kopGap) : 0;
+        $rightSideWidth = $useLogoKanan ? ($logoKananWidth + max(0, -$logoKananOffsetX) + $kopGap) : 0;
+        $sideWidth = $useLogoKanan ? max($leftSideWidth, $rightSideWidth) : $leftSideWidth;
     @endphp
 
     @if($useLogoKanan)
@@ -219,7 +223,7 @@
 
                 {{-- Kolom Kanan: Logo Sekunder --}}
                 <td style="width: {{ $sideWidth }}px; text-align: right; vertical-align: {{ $logoKananValign }};">
-                    <div style="margin-left: {{ $logoKananOffsetX }}px; margin-top: {{ $logoKananOffsetY }}px; float: right;">
+                    <div style="margin-right: {{ -$logoKananOffsetX }}px; margin-top: {{ $logoKananOffsetY }}px; float: right;">
                         <img src="{{ $settings->getLogoKananBase64() }}" 
                              alt="Logo Sekunder" 
                              style="width: {{ $logoKananWidth }}px; height: auto; display: block;">
@@ -246,7 +250,7 @@
                 </div>
             @endif
 
-            <div class="kop-text" style="width: 100%;">
+            <div class="kop-text" style="box-sizing: border-box; padding-left: {{ $sideWidth }}px; padding-right: {{ $sideWidth }}px;">
                 <div class="kop-line-1">{{ $settings->kop_line_1 ?? 'PEMERINTAH KOTA SURAKARTA' }}</div>
                 <div class="kop-line-2">{{ $settings->kop_line_2 ?? 'DINAS PENDIDIKAN' }}</div>
                 <div class="kop-line-3">{{ strtoupper($settings->nama_sekolah ?? 'SD NEGERI 1 SURAKARTA') }}</div>

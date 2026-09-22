@@ -72,6 +72,11 @@ class SchoolSettingsPage extends Page implements HasForms
         $this->data['has_logo_kanan'] = (bool) $value;
     }
 
+    public function updatedKopGap(mixed $value): void
+    {
+        $this->data['kop_gap'] = (int) ($value ?? 10);
+    }
+
     public function mount(): void
     {
         $settings = SchoolSettings::getInstance();
@@ -89,6 +94,7 @@ class SchoolSettingsPage extends Page implements HasForms
         $this->logo_kanan_valign = (string) ($settings->logo_kanan_valign ?? 'middle');
 
         $this->kop_gap = (int) ($settings->kop_gap ?? 10);
+        $this->data['kop_gap'] = $this->kop_gap;
     }
 
     public function form(Form $form): Form
@@ -223,6 +229,20 @@ class SchoolSettingsPage extends Page implements HasForms
                             ->imagePreviewHeight('90')
                             ->helperText('Format: PNG/JPG (Transparan disarankan).')
                             ->visible(fn ($get): bool => (bool) ($get('has_logo_kanan') ?? $this->has_logo_kanan)),
+
+                        TextInput::make('kop_gap')
+                            ->label('Jarak / Celah Logo ke Teks (px)')
+                            ->numeric()
+                            ->minValue(0)
+                            ->maxValue(80)
+                            ->default(10)
+                            ->suffix('px')
+                            ->helperText('Jarak horizontal antara logo dan teks kop surat (default: 10px). Pengaturan ini sinkron dengan slider Visual Studio di atas.')
+                            ->live(debounce: 300)
+                            ->afterStateUpdated(function ($state): void {
+                                $this->kop_gap = (int) ($state ?? 10);
+                            })
+                            ->columnSpanFull(),
                     ])->columns(2),
 
                 Section::make('Tanda Tangan & Pejabat Sekolah')
@@ -284,6 +304,7 @@ class SchoolSettingsPage extends Page implements HasForms
         $this->logo_kanan_valign = 'middle';
 
         $this->kop_gap = 10;
+        $this->data['kop_gap'] = 10;
 
         Notification::make()
             ->title('Posisi, ukuran, dan jarak logo dikembalikan ke standar')
