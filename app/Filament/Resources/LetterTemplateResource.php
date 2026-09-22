@@ -138,6 +138,7 @@ class LetterTemplateResource extends Resource
                             ->label('2. Pilih Data Identitas yang Ditampilkan')
                             ->options([
                                 'nama' => 'Nama',
+                                'nama_siswa' => 'Nama Siswa',
                                 'nip' => 'NIP',
                                 'nis' => 'NIS',
                                 'nisn' => 'NISN',

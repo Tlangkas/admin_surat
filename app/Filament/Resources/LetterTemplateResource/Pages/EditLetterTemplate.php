@@ -59,7 +59,7 @@ class EditLetterTemplate extends EditRecord
         } else {
             // Deteksi dari variables yang ada di template
             $vars = $record->variables ?? [];
-            $identityKeys = ['nama', 'nip', 'jabatan', 'alamat', 'sekolah', 'nisn', 'kelas', 'jurusan'];
+            $identityKeys = ['nama', 'nama_siswa', 'nip', 'jabatan', 'alamat', 'sekolah', 'nisn', 'kelas', 'jurusan'];
             $matched = array_values(array_intersect($identityKeys, $vars));
             $data['identity_fields'] = ! empty($matched) ? $matched : ['nama', 'nip', 'jabatan'];
         }

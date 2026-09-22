@@ -53,7 +53,28 @@ class CreateLetterRequest extends CreateRecord
         if ($user && $user->isGukar()) {
             $profile = $user->getProfileData();
             $currentPayload = $data['payload_data'] ?? [];
+
+            // Periksa apakah template ditujukan untuk identitas siswa
+            $template = \App\Models\LetterTemplate::find($data['template_id'] ?? null);
+            $allVarKeys = [];
+            if ($template && is_array($template->variables)) {
+                foreach ($template->variables as $vK => $vV) {
+                    $k = is_array($vV) ? ($vV['key'] ?? $vK) : ($vV ?? $vK);
+                    $allVarKeys[] = strtolower(trim((string) $k));
+                }
+            }
+            $hasNip = in_array('nip', $allVarKeys, true);
+            $hasNisn = in_array('nisn', $allVarKeys, true) || in_array('nis', $allVarKeys, true);
+            $templateTitle = strtolower($template?->title_text ?? $template?->name ?? '');
+            $isStudentLetter = ($hasNisn && ! $hasNip)
+                || (str_contains($templateTitle, 'siswa') && ! $hasNip)
+                || (str_contains($templateTitle, 'panggilan orang tua') && ! $hasNip)
+                || (str_contains($templateTitle, 'dispensasi') && ! $hasNip);
+
             foreach ($profile as $key => $val) {
+                if ($key === 'nama' && $isStudentLetter) {
+                    continue;
+                }
                 if (! isset($currentPayload[$key]) || $currentPayload[$key] === '') {
                     $currentPayload[$key] = $val;
                 }
@@ -96,11 +117,22 @@ class CreateLetterRequest extends CreateRecord
                 continue;
             }
 
-            if ($required && (! isset($payload[$cleanKey]) || trim((string) $payload[$cleanKey]) === '')) {
-                $cleanLabel = trim((string) $label);
-                throw ValidationException::withMessages([
-                    "payload_data.{$cleanKey}" => "Field {$cleanLabel} wajib diisi.",
-                ]);
+            if ($required) {
+                $isEmpty = false;
+                if (! isset($payload[$cleanKey])) {
+                    $isEmpty = true;
+                } elseif (is_array($payload[$cleanKey])) {
+                    $isEmpty = empty($payload[$cleanKey]);
+                } elseif (trim((string) $payload[$cleanKey]) === '') {
+                    $isEmpty = true;
+                }
+
+                if ($isEmpty) {
+                    $cleanLabel = trim((string) $label);
+                    throw ValidationException::withMessages([
+                        "payload_data.{$cleanKey}" => "Field {$cleanLabel} wajib diisi.",
+                    ]);
+                }
             }
         }
     }

@@ -59,6 +59,7 @@ class TemplateCompiler
 
                 $label = match (strtolower($cleanKey)) {
                     'nama' => 'Nama',
+                    'nama_siswa', 'siswa' => 'Nama Siswa',
                     'nip' => 'NIP',
                     'nisn' => 'NISN',
                     'nis' => 'NIS',
@@ -79,7 +80,7 @@ class TemplateCompiler
                 $html[] = '    <tr>';
                 $html[] = '        <td style="width: 28%; padding: 4px 0; vertical-align: top;">' . e($label) . '</td>';
                 $html[] = '        <td style="width: 3%; padding: 4px 0; vertical-align: top;">:</td>';
-                $html[] = '        <td style="padding: 4px 0; vertical-align: top;' . ($cleanKey === 'nama' ? ' font-weight: bold;' : '') . '">{{ ' . $cleanKey . ' }}</td>';
+                $html[] = '        <td style="padding: 4px 0; vertical-align: top;' . (in_array($cleanKey, ['nama', 'nama_siswa', 'siswa'], true) ? ' font-weight: bold;' : '') . '">{{ ' . $cleanKey . ' }}</td>';
                 $html[] = '    </tr>';
 
                 $allVars[] = $cleanKey;
@@ -114,7 +115,7 @@ class TemplateCompiler
                     'waktu', 'tanggal_pelaksanaan' => 'Waktu Pelaksanaan',
                     'tanggal_berangkat', 'tgl_berangkat' => 'Tanggal Berangkat',
                     'tanggal_kembali', 'tgl_kembali' => 'Tanggal Kembali',
-                    'nama_siswa' => 'Nama Siswa',
+                    'nama_siswa', 'siswa' => 'Nama Siswa',
                     'transportasi' => 'Transportasi',
                     'pejabat_pemberi_perintah' => 'Pejabat Pemberi Perintah',
                     'pangkat_golongan' => 'Pangkat dan Golongan',
@@ -136,7 +137,7 @@ class TemplateCompiler
                 $html[] = '    <tr>';
                 $html[] = '        <td style="width: 28%; padding: 4px 0; vertical-align: top;">' . e($label) . '</td>';
                 $html[] = '        <td style="width: 3%; padding: 4px 0; vertical-align: top;">:</td>';
-                $html[] = '        <td style="padding: 4px 0; vertical-align: top;">{{ ' . $cleanKey . ' }}</td>';
+                $html[] = '        <td style="padding: 4px 0; vertical-align: top;' . (in_array($cleanKey, ['nama_siswa', 'siswa'], true) ? ' font-weight: bold;' : '') . '">{{ ' . $cleanKey . ' }}</td>';
                 $html[] = '    </tr>';
 
                 $allVars[] = $cleanKey;

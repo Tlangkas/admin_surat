@@ -88,11 +88,22 @@ class EditLetterRequest extends EditRecord
                 continue;
             }
 
-            if ($required && (! isset($payload[$cleanKey]) || trim((string) $payload[$cleanKey]) === '')) {
-                $cleanLabel = trim((string) $label);
-                throw ValidationException::withMessages([
-                    "payload_data.{$cleanKey}" => "Field {$cleanLabel} wajib diisi.",
-                ]);
+            if ($required) {
+                $isEmpty = false;
+                if (! isset($payload[$cleanKey])) {
+                    $isEmpty = true;
+                } elseif (is_array($payload[$cleanKey])) {
+                    $isEmpty = empty($payload[$cleanKey]);
+                } elseif (trim((string) $payload[$cleanKey]) === '') {
+                    $isEmpty = true;
+                }
+
+                if ($isEmpty) {
+                    $cleanLabel = trim((string) $label);
+                    throw ValidationException::withMessages([
+                        "payload_data.{$cleanKey}" => "Field {$cleanLabel} wajib diisi.",
+                    ]);
+                }
             }
         }
     }

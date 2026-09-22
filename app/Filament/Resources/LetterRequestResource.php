@@ -116,6 +116,20 @@ class LetterRequestResource extends Resource
                                 $currentPayload = $get('payload_data') ?? [];
                                 $newPayload = [];
 
+                                // Periksa apakah template ini bertipe surat siswa (nama merujuk pada siswa, bukan guru)
+                                $allVarKeys = [];
+                                foreach ($template->variables as $vK => $vV) {
+                                    $k = is_array($vV) ? ($vV['key'] ?? $vK) : ($vV ?? $vK);
+                                    $allVarKeys[] = strtolower(trim((string) $k));
+                                }
+                                $hasNip = in_array('nip', $allVarKeys, true);
+                                $hasNisn = in_array('nisn', $allVarKeys, true) || in_array('nis', $allVarKeys, true);
+                                $templateTitle = strtolower($template->title_text ?? $template->name ?? '');
+                                $isStudentLetter = ($hasNisn && ! $hasNip)
+                                    || (str_contains($templateTitle, 'siswa') && ! $hasNip)
+                                    || (str_contains($templateTitle, 'panggilan orang tua') && ! $hasNip)
+                                    || (str_contains($templateTitle, 'dispensasi') && ! $hasNip);
+
                                 foreach ($template->variables as $varKey => $varVal) {
                                     if (is_array($varVal)) {
                                         $key = (string) ($varVal['key'] ?? $varKey);
@@ -128,13 +142,18 @@ class LetterRequestResource extends Resource
                                         continue;
                                     }
 
+                                    $lowerKey = strtolower($cleanKey);
+                                    if ($lowerKey === 'nama' && $isStudentLetter) {
+                                        $newPayload[$cleanKey] = '';
+                                        continue;
+                                    }
+
                                     if (isset($currentPayload[$cleanKey]) && $currentPayload[$cleanKey] !== '') {
                                         $newPayload[$cleanKey] = $currentPayload[$cleanKey];
 
                                         continue;
                                     }
 
-                                    $lowerKey = strtolower($cleanKey);
                                     if ($isGukar && isset($profile[$lowerKey])) {
                                         $newPayload[$cleanKey] = $profile[$lowerKey];
                                     } elseif ($isGukar && $lowerKey === 'nama_sekolah' && isset($profile['sekolah'])) {
@@ -164,7 +183,31 @@ class LetterRequestResource extends Resource
                             ];
                         }
 
+                        $templateVariables = $template->variables ?? [];
+                        $allVarKeys = [];
+                        foreach ($templateVariables as $varKey => $varVal) {
+                            if (is_array($varVal)) {
+                                $k = (string) ($varVal['key'] ?? $varKey);
+                            } else {
+                                $k = is_string($varKey) && ! is_numeric($varKey) ? $varKey : (string) $varVal;
+                            }
+                            $clean = strtolower(trim((string) $k));
+                            if ($clean !== '') {
+                                $allVarKeys[] = $clean;
+                            }
+                        }
+
+                        $hasNip = in_array('nip', $allVarKeys, true);
+                        $hasNisn = in_array('nisn', $allVarKeys, true) || in_array('nis', $allVarKeys, true);
+                        $templateTitle = strtolower($template->title_text ?? $template->name ?? '');
+                        $isStudentLetter = ($hasNisn && ! $hasNip)
+                            || (str_contains($templateTitle, 'siswa') && ! $hasNip)
+                            || (str_contains($templateTitle, 'panggilan orang tua') && ! $hasNip)
+                            || (str_contains($templateTitle, 'dispensasi') && ! $hasNip);
+
                         $fields = [];
+                        $studentSelectorAdded = false;
+
                         foreach ($template->variables as $varKey => $varVal) {
                             if (is_array($varVal)) {
                                 $key = (string) ($varVal['key'] ?? $varKey);
@@ -182,13 +225,125 @@ class LetterRequestResource extends Resource
                             $lowerKey = strtolower($cleanKey);
                             $cleanLabel = self::resolveFieldLabel($cleanKey, $rawLabel);
 
+                            // Jika surat identitas siswa, tampilkan selektor data siswa sebelum kolom identitas siswa pertama
+                            if (! $studentSelectorAdded && $isStudentLetter && in_array($lowerKey, ['nama', 'nama_siswa', 'siswa', 'nisn', 'nis', 'kelas'], true)) {
+                                $studentSelectorAdded = true;
+                                $targetFields = [];
+                                if (in_array('nama', $allVarKeys, true)) {
+                                    $targetFields['nama'] = 'nama';
+                                }
+                                if (in_array('nama_siswa', $allVarKeys, true)) {
+                                    $targetFields['nama'] = 'nama_siswa';
+                                }
+                                if (in_array('siswa', $allVarKeys, true)) {
+                                    $targetFields['nama'] = 'siswa';
+                                }
+                                if (in_array('nisn', $allVarKeys, true)) {
+                                    $targetFields['nisn'] = 'nisn';
+                                }
+                                if (in_array('nis', $allVarKeys, true)) {
+                                    $targetFields['nis'] = 'nis';
+                                }
+                                if (in_array('kelas', $allVarKeys, true)) {
+                                    $targetFields['kelas'] = 'kelas';
+                                }
+                                if (in_array('jurusan', $allVarKeys, true)) {
+                                    $targetFields['jurusan'] = 'jurusan';
+                                }
+
+                                $fields[] = Select::make('pilih_siswa_identitas')
+                                    ->label('Pilih dari Data Siswa (Opsional / Otomatisasi)')
+                                    ->helperText('Pilih siswa dari database untuk mengisi otomatis Nama, NISN, Kelas, dan Jurusan secara instan.')
+                                    ->placeholder('-- Cari Nama atau NISN Siswa untuk Otomatisasi --')
+                                    ->options(fn () => Siswa::query()->orderBy('nama')->get()->mapWithKeys(fn ($s) => [
+                                        $s->id => "{$s->nama} ({$s->nisn} - {$s->kelas} {$s->jurusan})",
+                                    ]))
+                                    ->searchable()
+                                    ->live()
+                                    ->dehydrated(false)
+                                    ->afterStateUpdated(function ($state, Forms\Set $set) use ($targetFields): void {
+                                        if (! $state) {
+                                            return;
+                                        }
+                                        $siswa = Siswa::find($state);
+                                        if (! $siswa) {
+                                            return;
+                                        }
+                                        foreach ($targetFields as $sourceCol => $payloadKey) {
+                                            $val = match ($sourceCol) {
+                                                'nama' => $siswa->nama,
+                                                'nisn', 'nis' => $siswa->nisn,
+                                                'kelas' => $siswa->kelas,
+                                                'jurusan' => $siswa->jurusan,
+                                                default => null,
+                                            };
+                                            if ($val !== null) {
+                                                $set("payload_data.{$payloadKey}", $val);
+                                            }
+                                        }
+                                    })
+                                    ->columnSpanFull();
+                            }
+
+                            // Jika bukan surat siswa (misal Surat Tugas Home Visit oleh guru), tetapi ada variabel nama_siswa/siswa
+                            if (! $studentSelectorAdded && ! $isStudentLetter && ($lowerKey === 'nama_siswa' || $lowerKey === 'siswa')) {
+                                $studentSelectorAdded = true;
+                                $targetFields = [];
+                                $targetFields['nama'] = $cleanKey;
+                                if (in_array('kelas', $allVarKeys, true)) {
+                                    $targetFields['kelas'] = 'kelas';
+                                }
+                                if (in_array('jurusan', $allVarKeys, true)) {
+                                    $targetFields['jurusan'] = 'jurusan';
+                                }
+                                if (in_array('nisn', $allVarKeys, true)) {
+                                    $targetFields['nisn'] = 'nisn';
+                                }
+                                if (in_array('nis', $allVarKeys, true)) {
+                                    $targetFields['nis'] = 'nis';
+                                }
+
+                                $fields[] = Select::make("pilih_siswa_for_{$cleanKey}")
+                                    ->label('Pilih Siswa dari Data Siswa (Opsional / Otomatisasi)')
+                                    ->helperText('Pilih siswa dari database untuk mengisi otomatis Nama Siswa dan rincian kelas secara instan.')
+                                    ->placeholder('-- Cari Nama atau NISN Siswa untuk Otomatisasi --')
+                                    ->options(fn () => Siswa::query()->orderBy('nama')->get()->mapWithKeys(fn ($s) => [
+                                        $s->id => "{$s->nama} ({$s->nisn} - {$s->kelas} {$s->jurusan})",
+                                    ]))
+                                    ->searchable()
+                                    ->live()
+                                    ->dehydrated(false)
+                                    ->afterStateUpdated(function ($state, Forms\Set $set) use ($targetFields): void {
+                                        if (! $state) {
+                                            return;
+                                        }
+                                        $siswa = Siswa::find($state);
+                                        if (! $siswa) {
+                                            return;
+                                        }
+                                        foreach ($targetFields as $sourceCol => $payloadKey) {
+                                            $val = match ($sourceCol) {
+                                                'nama' => $siswa->nama,
+                                                'nisn', 'nis' => $siswa->nisn,
+                                                'kelas' => $siswa->kelas,
+                                                'jurusan' => $siswa->jurusan,
+                                                default => null,
+                                            };
+                                            if ($val !== null) {
+                                                $set("payload_data.{$payloadKey}", $val);
+                                            }
+                                        }
+                                    })
+                                    ->columnSpanFull();
+                            }
+
                             if ($lowerKey === 'daftar_peserta' || $lowerKey === 'peserta') {
                                 $field = Repeater::make("payload_data.{$cleanKey}")
                                     ->label('Daftar Peserta')
                                     ->schema([
                                         Select::make('siswa_id')
-                                             ->label('Pilih dari Data Siswa (Opsional / Otomatisasi)')
-                                            ->options(fn () => Siswa::query()->orderBy('nama')->get()->mapWithKeys(fn ($s) => [$s->id => "{$s->nama} ({$s->nisn} - {$s->kelas})"]))
+                                            ->label('Pilih dari Data Siswa (Opsional / Otomatisasi)')
+                                            ->options(fn () => Siswa::query()->orderBy('nama')->get()->mapWithKeys(fn ($s) => [$s->id => "{$s->nama} ({$s->nisn} - {$s->kelas} {$s->jurusan})"]))
                                             ->searchable()
                                             ->live()
                                             ->afterStateUpdated(function ($state, Forms\Set $set): void {
@@ -206,6 +361,7 @@ class LetterRequestResource extends Resource
 
                                         TextInput::make('nama')
                                             ->label('Nama Peserta')
+                                            ->datalist(fn () => Siswa::query()->orderBy('nama')->pluck('nama')->toArray())
                                             ->required(),
 
                                         TextInput::make('identitas')
@@ -225,6 +381,79 @@ class LetterRequestResource extends Resource
                                     ->defaultItems(1)
                                     ->addActionLabel('+ Tambah Peserta')
                                     ->columnSpanFull();
+                            } elseif ($lowerKey === 'siswa_id' || $lowerKey === 'pilih_siswa') {
+                                $field = Select::make("payload_data.{$cleanKey}")
+                                    ->label($cleanLabel)
+                                    ->placeholder('-- Pilih Siswa --')
+                                    ->options(fn () => Siswa::query()->orderBy('nama')->get()->mapWithKeys(fn ($s) => [
+                                        $s->id => "{$s->nama} ({$s->nisn} - {$s->kelas} {$s->jurusan})",
+                                    ]))
+                                    ->searchable()
+                                    ->live()
+                                    ->afterStateUpdated(function ($state, Forms\Set $set) use ($allVarKeys, $isStudentLetter): void {
+                                        if (! $state) {
+                                            return;
+                                        }
+                                        $siswa = Siswa::find($state);
+                                        if (! $siswa) {
+                                            return;
+                                        }
+                                        if (in_array('nama_siswa', $allVarKeys, true)) {
+                                            $set('payload_data.nama_siswa', $siswa->nama);
+                                        } elseif ($isStudentLetter && in_array('nama', $allVarKeys, true)) {
+                                            $set('payload_data.nama', $siswa->nama);
+                                        }
+                                        if (in_array('nisn', $allVarKeys, true)) {
+                                            $set('payload_data.nisn', $siswa->nisn);
+                                        }
+                                        if (in_array('nis', $allVarKeys, true)) {
+                                            $set('payload_data.nis', $siswa->nisn);
+                                        }
+                                        if (in_array('kelas', $allVarKeys, true)) {
+                                            $set('payload_data.kelas', $siswa->kelas);
+                                        }
+                                        if (in_array('jurusan', $allVarKeys, true)) {
+                                            $set('payload_data.jurusan', $siswa->jurusan);
+                                        }
+                                    })
+                                    ->required()
+                                    ->columnSpanFull();
+                            } elseif ($lowerKey === 'nama_siswa' || $lowerKey === 'siswa') {
+                                $field = TextInput::make("payload_data.{$cleanKey}")
+                                    ->label($cleanLabel)
+                                    ->placeholder('Ketik nama siswa atau pilih dari dropdown di atas')
+                                    ->datalist(fn () => Siswa::query()->orderBy('nama')->pluck('nama')->toArray())
+                                    ->required();
+                            } elseif ($lowerKey === 'nama' && $isStudentLetter) {
+                                $field = TextInput::make("payload_data.{$cleanKey}")
+                                    ->label($cleanLabel)
+                                    ->placeholder('Ketik nama siswa atau pilih dari dropdown di atas')
+                                    ->datalist(fn () => Siswa::query()->orderBy('nama')->pluck('nama')->toArray())
+                                    ->required();
+                            } elseif ($lowerKey === 'nisn') {
+                                $field = TextInput::make("payload_data.{$cleanKey}")
+                                    ->label($cleanLabel)
+                                    ->placeholder('Contoh: 0051234567')
+                                    ->datalist(fn () => Siswa::query()->orderBy('nisn')->pluck('nisn')->toArray())
+                                    ->required();
+                            } elseif ($lowerKey === 'nis') {
+                                $field = TextInput::make("payload_data.{$cleanKey}")
+                                    ->label($cleanLabel)
+                                    ->placeholder('Contoh: 12345')
+                                    ->datalist(fn () => Siswa::query()->orderBy('nisn')->pluck('nisn')->toArray())
+                                    ->required();
+                            } elseif ($lowerKey === 'kelas') {
+                                $field = TextInput::make("payload_data.{$cleanKey}")
+                                    ->label($cleanLabel)
+                                    ->placeholder('Contoh: XII RPL 1')
+                                    ->datalist(fn () => Siswa::query()->whereNotNull('kelas')->distinct()->pluck('kelas')->toArray())
+                                    ->required();
+                            } elseif ($lowerKey === 'jurusan') {
+                                $field = TextInput::make("payload_data.{$cleanKey}")
+                                    ->label($cleanLabel)
+                                    ->placeholder('Contoh: Rekayasa Perangkat Lunak')
+                                    ->datalist(fn () => Siswa::query()->whereNotNull('jurusan')->distinct()->pluck('jurusan')->toArray())
+                                    ->required();
                             } elseif ($lowerKey === 'jenis_kelamin' || $lowerKey === 'jk') {
                                 $field = Select::make("payload_data.{$cleanKey}")
                                     ->label($cleanLabel)
@@ -350,7 +579,8 @@ class LetterRequestResource extends Resource
             'tempat_kegiatan', 'lokasi', 'tempat' => 'Tempat Pelaksanaan',
             'hari_tanggal' => 'Hari, Tanggal',
             'waktu', 'tanggal_pelaksanaan' => 'Waktu Pelaksanaan',
-            'nama_siswa' => 'Nama Siswa',
+            'nama_siswa', 'siswa' => 'Nama Siswa',
+            'siswa_id', 'pilih_siswa' => 'Pilih Siswa',
             'transportasi' => 'Transportasi',
             'pejabat_pemberi_perintah' => 'Pejabat Pemberi Perintah',
             'pangkat_golongan' => 'Pangkat dan Golongan',
