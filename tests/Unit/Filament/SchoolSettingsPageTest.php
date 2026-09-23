@@ -166,8 +166,8 @@ class SchoolSettingsPageTest extends TestCase
             'qrCodeSvg' => '',
         ])->render();
 
-        // Mode 1 Logo: Jarak gap diterapkan pada posisi horizontal absolute logo kiri
-        $this->assertStringContainsString('left: 25px', $html);
+        // Mode 1 Logo: Jarak gap diterapkan secara simetris pada kolom logo kiri dan penyeimbang
+        $this->assertStringContainsString('margin-left: 25px', $html);
 
         // Mode 2 Logo: Jarak gap diterapkan secara simetris pada margin logo kiri dan kanan
         $settings->update([
