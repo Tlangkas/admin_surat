@@ -7,7 +7,7 @@
     <style>
         @page {
             size: A4 portrait;
-            margin: 1.5cm 2cm 2cm 2cm;
+            margin: 1.2cm 1.5cm 2cm 1.5cm;
         }
 
         body {
@@ -75,7 +75,7 @@
 
         .kop-text .kop-line-4,
         .kop-text p.kop-alamat {
-            font-size: 8.5pt;
+            font-size: 7.2pt;
             margin: 3px 0 0 0;
             line-height: 1.25;
             font-family: Arial, Helvetica, sans-serif;
@@ -83,7 +83,7 @@
 
         .kop-text .kop-line-5,
         .kop-text p.kop-kontak {
-            font-size: 8pt;
+            font-size: 7pt;
             margin: 2px 0 0 0;
             line-height: 1.25;
             font-family: Arial, Helvetica, sans-serif;
@@ -214,12 +214,32 @@
             </td>
 
             {{-- Kolom Tengah: Teks Instansi Kop Surat --}}
-            <td class="kop-text" style="text-align: center; vertical-align: middle; padding: 0;">
+            <td class="kop-text" style="text-align: center; vertical-align: {{ $logoValign }}; padding: 0;">
                 <div class="kop-line-1">{{ $settings->kop_line_1 ?? 'PEMERINTAH KOTA SURAKARTA' }}</div>
                 <div class="kop-line-2">{{ $settings->kop_line_2 ?? 'DINAS PENDIDIKAN' }}</div>
                 <div class="kop-line-3">{{ strtoupper($settings->nama_sekolah ?? 'SD NEGERI 1 SURAKARTA') }}</div>
                 <div class="kop-line-4">{{ $settings->alamat_lengkap ?? $settings->alamat }}</div>
-                <div class="kop-line-5">{{ implode(' | ', array_filter([$settings->kontak_lengkap, $settings->npsn ? ('NPSN: ' . $settings->npsn) : null, $settings->formatted_akreditasi])) }}</div>
+                @php
+                    $contactParts = [];
+                    if (!empty($settings->telepon)) {
+                        $telp = trim((string) $settings->telepon);
+                        $contactParts[] = str_starts_with(strtolower($telp), 'telp') ? $telp : 'Telp. ' . $telp;
+                    }
+                    if (!empty($settings->email)) {
+                        $email = trim((string) $settings->email);
+                        $contactParts[] = str_starts_with(strtolower($email), 'email') ? $email : 'Email: ' . $email;
+                    }
+                    if (!empty($settings->website)) {
+                        $contactParts[] = trim((string) $settings->website);
+                    }
+                    if (!empty($settings->npsn)) {
+                        $contactParts[] = 'NPSN: ' . trim((string) $settings->npsn);
+                    }
+                    if (!empty($settings->formatted_akreditasi)) {
+                        $contactParts[] = $settings->formatted_akreditasi;
+                    }
+                @endphp
+                <div class="kop-line-5">{{ implode(' | ', $contactParts) }}</div>
             </td>
 
             {{-- Kolom Kanan: Logo Sekunder atau Penyeimbang Simetris Senter Kertas --}}

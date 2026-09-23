@@ -297,7 +297,7 @@
 
             {{-- KANVAS KERTAS DOKUMEN KOP SURAT (Pure High-Contrast White Sheet) --}}
             <div style="background-color: #0b1120; padding: 28px 20px; display: flex; justify-content: center; overflow-x: auto;">
-                <div style="width: 100%; max-width: 820px; background-color: #ffffff !important; color: #000000 !important; padding: 32px 40px; border-radius: 6px; box-shadow: 0 15px 35px -5px rgba(0,0,0,0.4); border: 1px solid #e2e8f0; font-family: 'Times New Roman', Times, serif; user-select: none;">
+                <div style="width: 100%; max-width: 800px; background-color: #ffffff !important; color: #000000 !important; padding: 28px 57px; border-radius: 6px; box-shadow: 0 15px 35px -5px rgba(0,0,0,0.4); border: 1px solid #e2e8f0; font-family: 'Times New Roman', Times, serif; user-select: none;">
                     
                     {{-- Kop Surat Simetris Standar Instansi Pendidikan (100% Senter Presisi Kertas) --}}
                     <div style="position: relative; width: 100%; min-height: 85px; color: #000000 !important;">
@@ -355,12 +355,12 @@
                                 {{ $settingsInstance->nama_sekolah ?? 'SEKOLAH MENENGAH ATAS NEGERI 1 CONTOH' }}
                             </div>
                             
-                            <div style="font-size: 11px; margin-top: 3px; line-height: 1.25; color: #1e293b !important; font-family: Arial, Helvetica, sans-serif;"
+                            <div style="font-size: 10px; margin-top: 3px; line-height: 1.25; color: #1e293b !important; font-family: Arial, Helvetica, sans-serif;"
                                  x-text="(alamat || '{{ $settingsInstance->alamat ?? 'Jl. Contoh No. 123' }}') + (kodePos ? ', ' + kodePos : '{{ !empty($settingsInstance->kode_pos) ? ', ' . $settingsInstance->kode_pos : '' }}')">
                                 {{ $settingsInstance->alamat ?? 'Jl. Contoh No. 123' }}{{ !empty($settingsInstance->kode_pos) ? ', ' . $settingsInstance->kode_pos : '' }}
                             </div>
                             
-                            <div style="font-size: 10.5px; margin-top: 2px; line-height: 1.25; color: #334155 !important; font-family: Arial, Helvetica, sans-serif;"
+                            <div style="font-size: 9.5px; margin-top: 2px; line-height: 1.25; color: #334155 !important; font-family: Arial, Helvetica, sans-serif;"
                                  x-text="[
                                     (telepon ? 'Telp. ' + telepon : '{{ !empty($settingsInstance->telepon) ? 'Telp. ' . $settingsInstance->telepon : '' }}'),
                                     (email ? 'Email: ' + email : '{{ !empty($settingsInstance->email) ? 'Email: ' . $settingsInstance->email : '' }}'),
