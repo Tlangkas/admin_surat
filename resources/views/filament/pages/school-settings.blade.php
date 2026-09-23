@@ -76,14 +76,14 @@
 
             getSideWidth() {
                 const gap = (this.kopGap !== null && this.kopGap !== undefined && !isNaN(this.kopGap)) ? parseInt(this.kopGap) : 10;
-                const leftW = parseInt(this.logoWidth || 85) + Math.max(0, parseInt(this.logoOffsetX || 0));
+                const leftW = parseInt(this.logoWidth || 85) + Math.max(0, parseInt(this.logoOffsetX || 0)) + gap;
                 
                 if (this.hasLogoKanan) {
-                    const rightW = parseInt(this.logoKananWidth || 85) + Math.max(0, -parseInt(this.logoKananOffsetX || 0));
-                    return Math.max(leftW, rightW) + gap;
+                    const rightW = parseInt(this.logoKananWidth || 85) + Math.max(0, -parseInt(this.logoKananOffsetX || 0)) + gap;
+                    return Math.max(leftW, rightW);
                 }
                 
-                return leftW + gap;
+                return leftW;
             },
 
             resetPositions() {
@@ -301,10 +301,10 @@
                     
                     {{-- Kop Surat Simetris Standar Instansi Pendidikan (100% Senter Presisi Kertas) --}}
                     <div style="position: relative; width: 100%; min-height: 85px; color: #000000 !important;">
-                        
                         {{-- Logo Utama (Kiri) dengan Drag Handle --}}
-                        <div style="position: absolute; left: 0; z-index: 10;"
+                        <div style="position: absolute; z-index: 10;"
                              :style="{ 
+                                 left: `${kopGap !== null && kopGap !== undefined && !isNaN(kopGap) ? kopGap : 10}px`,
                                  top: (logoValign === 'top' ? '0px' : (logoValign === 'bottom' ? 'auto' : '50%')),
                                  bottom: (logoValign === 'bottom' ? '0px' : 'auto'),
                                  transform: (logoValign === 'middle' ? `translate(${logoOffsetX || 0}px, calc(-50% + ${logoOffsetY || 0}px))` : `translate(${logoOffsetX || 0}px, ${logoOffsetY || 0}px)`)
@@ -335,7 +335,7 @@
                         </div>
 
                         {{-- Teks Kop Surat: 100% Senter Presisi Kertas (Sejajar Sumbu Tengah Halaman) --}}
-                        <div style="width: 100%; text-align: center; margin: 0 auto; color: #000000 !important; font-family: 'Times New Roman', Times, serif; box-sizing: border-box;"
+                        <div style="width: 100%; text-align: center; margin: 0 auto; box-sizing: border-box; color: #000000 !important; font-family: 'Times New Roman', Times, serif;"
                              :style="{ 
                                  paddingLeft: `${getSideWidth()}px`,
                                  paddingRight: `${getSideWidth()}px`
@@ -374,8 +374,9 @@
 
                         {{-- Logo Sekunder (Kanan) --}}
                         <template x-if="hasLogoKanan">
-                            <div style="position: absolute; right: 0; z-index: 10;"
+                            <div style="position: absolute; z-index: 10;"
                                  :style="{ 
+                                     right: `${kopGap !== null && kopGap !== undefined && !isNaN(kopGap) ? kopGap : 10}px`,
                                      top: (logoKananValign === 'top' ? '0px' : (logoKananValign === 'bottom' ? 'auto' : '50%')),
                                      bottom: (logoKananValign === 'bottom' ? '0px' : 'auto'),
                                      transform: (logoKananValign === 'middle' ? `translate(${logoKananOffsetX || 0}px, calc(-50% + ${logoKananOffsetY || 0}px))` : `translate(${logoKananOffsetX || 0}px, ${logoKananOffsetY || 0}px)`)
